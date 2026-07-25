@@ -72,8 +72,8 @@
     border-radius:0 0 10px 10px; margin:0 1px; display:flex; align-items:flex-end; justify-content:center;
     padding-bottom:10px; font-weight:800; color:#9a94c0; cursor:pointer; position:relative; touch-action:none;}
   .wkey:active,.wkey.on{background:linear-gradient(#ffe9a8,#ffd23f); color:#7a5b00;}
-  .bkey{width:clamp(22px,4.4%,36px); height:130px; background:linear-gradient(#4a4470,#231f3d); border-radius:0 0 8px 8px;
-    position:absolute; top:0; z-index:2; cursor:pointer; transform:translateX(-50%); touch-action:none;}
+  .bkey{position:absolute; top:0; right:0; transform:translateX(50%); width:62%; height:130px;
+    background:linear-gradient(#4a4470,#231f3d); border-radius:0 0 8px 8px; z-index:3; cursor:pointer; touch-action:none;}
   .bkey:active,.bkey.on{background:linear-gradient(#ff8fc0,#ff5ca8);}
   .key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
   .bkey.key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
@@ -667,39 +667,24 @@ function buildKeyboard(playFn){
   const whites=["C","D","E","F","G","A","B"];
   const blackAfter={"C":"C#","D":"D#","F":"F#","G":"G#","A":"A#"};
   const startOct=4, octs=octaveCount();
-  let wIndex=0;
-  const whiteEls=[];
   for(let o=0;o<octs;o++){
     for(const w of whites){
       const noteName=w+(startOct+o);
       const key=el("div",{class:"wkey",text:w,"data-note":noteName});
       key.addEventListener("pointerdown",()=>{ pf(noteFreq(noteName)); flash(key); });
-      kb.appendChild(key); whiteEls.push({name:noteName,elm:key,idx:wIndex});
-      wIndex++;
+      if(blackAfter[w]){
+        const bn=blackAfter[w]+(startOct+o);
+        const bk=el("div",{class:"bkey","data-note":bn});
+        bk.addEventListener("pointerdown",(e)=>{ e.stopPropagation(); pf(noteFreq(bn)); flash(bk); });
+        key.appendChild(bk);   // black key anchored to its white key via CSS (no JS measurement)
+      }
+      kb.appendChild(key);
     }
   }
-  // add a top C
   const topC="C"+(startOct+octs);
   const tk=el("div",{class:"wkey",text:"C","data-note":topC});
   tk.addEventListener("pointerdown",()=>{ pf(noteFreq(topC)); flash(tk); });
-  kb.appendChild(tk); whiteEls.push({name:topC,elm:tk,idx:wIndex});
-
-  // position black keys
-  requestAnimationFrame(()=>{
-    let wi=0;
-    for(let o=0;o<octs;o++){
-      for(const w of whites){
-        if(blackAfter[w]){
-          const bn=blackAfter[w]+(startOct+o);
-          const bk=el("div",{class:"bkey","data-note":bn});
-          bk.style.left=(whiteEls[wi].elm.offsetLeft+whiteEls[wi].elm.offsetWidth)+"px";
-          bk.addEventListener("pointerdown",(e)=>{ e.stopPropagation(); pf(noteFreq(bn)); flash(bk); });
-          kb.appendChild(bk);
-        }
-        wi++;
-      }
-    }
-  });
+  kb.appendChild(tk);
   wrap.appendChild(kb);
   return wrap;
 }
@@ -811,35 +796,27 @@ function buildSongKeyboard(song){
   const blackAfter={"C":"C#","D":"D#","F":"F#","G":"G#","A":"A#"};
   const octs=2, startOct=4;
   songKeyEls={};
-  const whiteEls=[];
-  let wi=0;
   for(let o=0;o<octs;o++){
     for(const w of whites){
       const nn=w+(startOct+o);
       const key=el("div",{class:"wkey",text:w,"data-note":nn});
       key.addEventListener("pointerdown",()=>onSongKey(nn,key));
-      kb.appendChild(key); whiteEls.push(key); songKeyEls[nn]=key; wi++;
+      songKeyEls[nn]=key;
+      if(blackAfter[w]){
+        const bn=blackAfter[w]+(startOct+o);
+        const bk=el("div",{class:"bkey","data-note":bn});
+        bk.addEventListener("pointerdown",(e)=>{e.stopPropagation(); onSongKey(bn,bk);});
+        songKeyEls[bn]=bk;
+        key.appendChild(bk);   // black key anchored to its white key via CSS
+      }
+      kb.appendChild(key);
     }
   }
   const topC="C"+(startOct+octs);
   const tk=el("div",{class:"wkey",text:"C","data-note":topC});
   tk.addEventListener("pointerdown",()=>onSongKey(topC,tk));
-  kb.appendChild(tk); whiteEls.push(tk); songKeyEls[topC]=tk;
-  requestAnimationFrame(()=>{
-    let idx=0;
-    for(let o=0;o<octs;o++){
-      for(const w of whites){
-        if(blackAfter[w]){
-          const bn=blackAfter[w]+(startOct+o);
-          const bk=el("div",{class:"bkey","data-note":bn});
-          bk.style.left=(whiteEls[idx].offsetLeft+whiteEls[idx].offsetWidth)+"px";
-          bk.addEventListener("pointerdown",(e)=>{e.stopPropagation(); onSongKey(bn,bk);});
-          kb.appendChild(bk); songKeyEls[bn]=bk;
-        }
-        idx++;
-      }
-    }
-  });
+  songKeyEls[topC]=tk;
+  kb.appendChild(tk);
   wrap.appendChild(kb);
   return wrap;
 }
