@@ -142,7 +142,7 @@
 "use strict";
 
 /* ============================================================
-   i18n DICTIONARY  — every user-facing string lives here.
+   i18n DICTIONARY , every user-facing string lives here.
    English ships now. Hindi (hi) is a pure add: copy the `en`
    object, translate values, keys stay identical.
    Band-tuned copy uses keys suffixed _b1 (4-6) _b2 (7-9) _b3 (10-12).
@@ -156,7 +156,7 @@ const I18N = {
     band_b1:"Little Musicians", band_b1_age:"ages 4–6",
     band_b2:"Music Explorers", band_b2_age:"ages 7–9",
     band_b3:"Rising Stars", band_b3_age:"ages 10–12",
-    band_adult:"Grown-ups", band_adult_age:"coming soon!",
+    band_adult:"Grown-ups", band_adult_age:"any age, never too late",
     level_title:"Have you played before?", level_sub:"There's no wrong answer!",
     level_new:"Never touched one", level_new_desc:"Let's start from the very beginning",
     level_some:"I know a little", level_some_desc:"Let's build on what you know",
@@ -195,7 +195,7 @@ const I18N = {
     // songs
     song_pick:"Pick a song", song_twinkle:"Twinkle Twinkle", song_mary:"Mary Had a Little Lamb",
     song_ode:"Ode to Joy", song_birthday:"Happy Birthday",
-    song_watch:"Watch it play", song_yourturn:"Your turn — follow the glowing keys!",
+    song_watch:"Watch it play", song_yourturn:"Your turn, follow the glowing keys!",
     song_welldone:"You played it! 🌟",
     // chords
     chord_pick:"Pick a chord to learn", chord_strum:"Strum this chord",
@@ -225,7 +225,7 @@ const I18N = {
     tab_intro:"Tab shows which string to play. Tap the strings in order, left to right.",
     tab_done:"Nice reading! 🎶",
     // find note
-    find_intro:"Find and tap the {note} key!", find_right:"Yes! That's {note}!", find_wrong:"Not quite — try again!",
+    find_intro:"Find and tap the {note} key!", find_right:"Yes! That's {note}!", find_wrong:"Not quite, try again!",
     find_score:"Found {n} of {t}!",
     // videos
     videos_sub:"Ask a grown-up to watch with you. Opens in a new tab.",
@@ -299,7 +299,7 @@ function el(tag, attrs, children){
 }
 
 /* ============================================================
-   WEB AUDIO ENGINE — all sound synthesized, no files.
+   WEB AUDIO ENGINE, all sound synthesized, no files.
    ============================================================ */
 let AC=null;
 function ensureAudio(){
@@ -1255,7 +1255,7 @@ function actTab(){
 const VIDEOS={
   piano:[
     {t:"How a piano works (inside look)", u:"https://www.youtube.com/results?search_query=how+a+piano+works+inside+for+kids", em:"🎹", who:"all"},
-    {t:"Kids piano — Twinkle Twinkle tutorial", u:"https://www.youtube.com/results?search_query=twinkle+twinkle+easy+piano+for+kids", em:"⭐", who:"b1"},
+    {t:"Kids piano, Twinkle Twinkle tutorial", u:"https://www.youtube.com/results?search_query=twinkle+twinkle+easy+piano+for+kids", em:"⭐", who:"b1"},
     {t:"Amazing young pianist performance", u:"https://www.youtube.com/results?search_query=talented+kid+piano+performance", em:"🌟", who:"all"}
   ],
   guitar:[
@@ -1294,7 +1294,7 @@ render();
 <script>
 "use strict";
 /* ============================================================
-   PHASE 2 — MORE INSTRUMENTS (ukulele, keyboard/synth, singing)
+   PHASE 2, MORE INSTRUMENTS (ukulele, keyboard/synth, singing)
    Shares global scope with the main script. All strings added to
    the same i18n dictionary; all sound synthesized; NO microphone.
    ============================================================ */
@@ -1551,7 +1551,7 @@ Object.assign(VIDEOS,{
 <script>
 "use strict";
 /* ============================================================
-   PHASE 2 — GROWN-UPS TRACK
+   PHASE 2, GROWN-UPS TRACK
    Grown-ups is modelled as a 4th age band ("ad") so it reuses the
    whole band -> level -> instrument -> hub flow and every activity,
    with adult reading level. Adds: "Which suits you?" recommender,
@@ -1560,20 +1560,20 @@ Object.assign(VIDEOS,{
    ============================================================ */
 
 Object.assign(I18N.en, {
-  band_adult_age:"any age — never too late",
+  band_adult_age:"any age, never too late",
   videos_sub_ad:"Opens in a new tab on YouTube.",
   act_match:"Which suits you?", act_match_desc:"Find your instrument",
   act_basics:"Grown-up Basics", act_basics_desc:"Fundamentals, at an adult pace",
   act_buying:"Buy Your First One", act_buying_desc:"What to look for",
   // never-too-late Meet framing per instrument
-  meet_piano_ad:"It's never too late to start piano. The layout is wonderfully logical — low notes on the left, high on the right — which makes it one of the clearest instruments to understand as an adult. You'll read music and train both hands, and progress is satisfyingly visible.",
+  meet_piano_ad:"It's never too late to start piano. The layout is wonderfully logical, low notes on the left, high on the right, which makes it one of the clearest instruments to understand as an adult. You'll read music and train both hands, and progress is satisfyingly visible.",
   meet_guitar_ad:"Guitar is a favourite adult starter: portable, social and satisfying quickly. Six strings, a few chord shapes, and you're playing songs. Your fingertips toughen up within a couple of weeks.",
   meet_drums_ad:"Drumming is pure rhythm and a brilliant stress-reliever. You'll feel a groove within your first session. Electronic kits let you practise silently on headphones if space or noise is a concern.",
   meet_uku_ad:"The ukulele is the gentlest place to begin. Four soft strings, a handful of easy chords, and songs on day one. It's cheap, tiny and genuinely hard to put down.",
   meet_synth_ad:"A keyboard or synth gives you piano fundamentals plus a whole world of sounds, and headphones mean you can practise at any hour without disturbing anyone.",
   meet_voice_ad:"Your voice is the instrument you already own. With gentle warm-ups and a little pitch practice, adults improve quickly. Nothing here is recorded.",
   // which-suits-you guide
-  match_intro:"Answer three quick questions and I'll suggest a starting instrument. There's no wrong choice — you can explore any of them.",
+  match_intro:"Answer three quick questions and I'll suggest a starting instrument. There's no wrong choice, you can explore any of them.",
   match_q1:"What pulls you in most?",
   match_q1_a:"Melody & harmony", match_q1_b:"Rhythm & groove", match_q1_c:"Songs to sing along to", match_q1_d:"Using my own voice",
   match_q2:"Where will you mostly play?",
@@ -1582,30 +1582,30 @@ Object.assign(I18N.en, {
   match_q3_a:"Keep it low", match_q3_b:"Middle of the road", match_q3_c:"Room to invest",
   match_result:"A great fit for you: {inst}",
   match_reason_piano:"Piano lays music out clearly and builds strong all-round fundamentals.",
-  match_reason_guitar:"Guitar is portable and social — perfect for songs and singalongs.",
+  match_reason_guitar:"Guitar is portable and social, perfect for songs and singalongs.",
   match_reason_drums:"Drums are all about rhythm and groove, and a brilliant energy outlet.",
   match_reason_uku:"The ukulele is the easiest, cheapest and most portable place to start.",
   match_reason_synth:"A keyboard gives you piano skills plus endless sounds, quietly on headphones.",
-  match_reason_voice:"Singing needs no gear — just your voice and a little warm-up.",
+  match_reason_voice:"Singing needs no gear, just your voice and a little warm-up.",
   match_go:"Explore {inst} →", match_again:"↺ Try again", match_pick:"Or pick any instrument yourself",
   // adult-paced fundamentals
-  basics_intro:"Grown-up basics for {inst}. Small, steady practice beats rare marathons — ten to fifteen minutes most days goes a long way.",
+  basics_intro:"Grown-up basics for {inst}. Small, steady practice beats rare marathons, ten to fifteen minutes most days goes a long way.",
   basics_try:"Have a go →",
-  basics_piano:"Sit tall with relaxed shoulders and curved fingers. Find Middle C and learn the white-key note names around it. Start with the C major scale (one hand, then both) and one easy piece you like. Keep a steady beat — a metronome or app helps. Ten to fifteen focused minutes most days will move you faster than the occasional long session.",
-  basics_guitar:"Hold the guitar relaxed with your thumb behind the neck, and tune up with a free clip-on or app tuner. Your first goal is three chords — E minor, G and C — and switching cleanly between them. Press just behind the fret, not on top of it. Fingertips will be sore for a week or two, then calluses form and it gets easy.",
+  basics_piano:"Sit tall with relaxed shoulders and curved fingers. Find Middle C and learn the white-key note names around it. Start with the C major scale (one hand, then both) and one easy piece you like. Keep a steady beat, a metronome or app helps. Ten to fifteen focused minutes most days will move you faster than the occasional long session.",
+  basics_guitar:"Hold the guitar relaxed with your thumb behind the neck, and tune up with a free clip-on or app tuner. Your first goal is three chords, E minor, G and C, and switching cleanly between them. Press just behind the fret, not on top of it. Fingertips will be sore for a week or two, then calluses form and it gets easy.",
   basics_drums:"Hold the sticks loosely and let them rebound rather than forcing them down. Learn the basic beat: kick on counts 1 and 3, snare on 2 and 4, steady hi-hats in between. Play slowly with a metronome and speed up only when it's clean. A rubber practice pad is a great quiet substitute for a full kit.",
-  basics_uku:"Tune the four strings g-C-E-A and you're ready. The chords C, Am and F unlock a huge number of songs, and a relaxed down-up strum is all the right hand needs at first. It's the friendliest string instrument to begin on — light, forgiving and quick to reward you.",
+  basics_uku:"Tune the four strings g-C-E-A and you're ready. The chords C, Am and F unlock a huge number of songs, and a relaxed down-up strum is all the right hand needs at first. It's the friendliest string instrument to begin on, light, forgiving and quick to reward you.",
   basics_synth:"A keyboard gives you piano fundamentals plus a world of sounds. Learn the note layout and a simple scale, then explore the voices. Touch-sensitive keys respond to how hard you play; weighted keys feel closest to a real piano. Headphones let you practise at any hour.",
   basics_voice:"Warm up gently and never push through strain. Breathe low, from the belly, and start by matching single notes from a keyboard or app before trying whole phrases. Short daily practice, water and rest keep your voice healthy. Recording yourself on your own device is the fastest way to hear progress.",
   // buying advice
   buying_intro:"Buying your first {inst}. Prices vary a lot by country and change over time, so treat any specifics as rough and check current local listings.",
-  buying_caveat:"General guidance only — not financial advice. Prices and models change, so compare current local options before buying.",
-  buying_piano:"A digital piano with 88 weighted, hammer-action keys is the best value to begin — it feels like a real piano, never needs tuning, and works with headphones. Acoustic uprights sound wonderful but need space, regular tuning and a bigger budget. Whatever you try, prioritise weighted keys over a light synth-action keyboard.",
-  buying_guitar:"A comfortable beginner acoustic is ideal; nylon-string (classical) guitars are gentler on new fingers, steel-string a little brighter and louder. The most important thing is a proper setup so the strings sit low and easy to press — a quick shop setup transforms a cheap guitar. Add a clip-on tuner.",
-  buying_drums:"An electronic kit is the practical choice for most homes: quiet through headphones and it fits a corner. Acoustic kits feel and sound great but are loud and need space. If you're unsure, start with a practice pad, a pair of sticks and a metronome — that alone builds real technique.",
+  buying_caveat:"General guidance only, not financial advice. Prices and models change, so compare current local options before buying.",
+  buying_piano:"A digital piano with 88 weighted, hammer-action keys is the best value to begin, it feels like a real piano, never needs tuning, and works with headphones. Acoustic uprights sound wonderful but need space, regular tuning and a bigger budget. Whatever you try, prioritise weighted keys over a light synth-action keyboard.",
+  buying_guitar:"A comfortable beginner acoustic is ideal; nylon-string (classical) guitars are gentler on new fingers, steel-string a little brighter and louder. The most important thing is a proper setup so the strings sit low and easy to press, a quick shop setup transforms a cheap guitar. Add a clip-on tuner.",
+  buying_drums:"An electronic kit is the practical choice for most homes: quiet through headphones and it fits a corner. Acoustic kits feel and sound great but are loud and need space. If you're unsure, start with a practice pad, a pair of sticks and a metronome, that alone builds real technique.",
   buying_uku:"A soprano or concert ukulele from a known beginner brand is a superb, inexpensive first instrument. Look for one that holds its tuning and has smooth strings; avoid the very cheapest toy versions that won't stay in tune. Geared tuners are a nice bonus.",
   buying_synth:"Sixty-one keys are plenty to start; choose eighty-eight weighted keys if you want a true piano feel. Make sure the keys are touch-sensitive so volume responds to your playing. Check that it has a headphone jack and, ideally, USB so you can connect to music apps later.",
-  buying_voice:"Your voice is free — that's the joy of it. The only worthwhile purchases are a tuner or piano app to check your pitch, and perhaps a few lessons to learn healthy technique. A quiet room and regular practice matter far more than any gear."
+  buying_voice:"Your voice is free, that's the joy of it. The only worthwhile purchases are a tuner or piano app to check your pitch, and perhaps a few lessons to learn healthy technique. A quiet room and regular practice matter far more than any gear."
 });
 
 /* ---- "Which instrument suits you?" recommender ---- */
@@ -1669,7 +1669,7 @@ function matchResult(){
 function actBasics(){
   app().appendChild(topbar(true));
   const nm=instName();
-  app().appendChild(el("div",{class:"screen-title",text:"📘 "+t("act_basics")+" — "+nm}));
+  app().appendChild(el("div",{class:"screen-title",text:"📘 "+t("act_basics")+", "+nm}));
   app().appendChild(el("div",{class:"panel"},[
     el("p",{text:t("basics_intro",{inst:nm}),style:"color:var(--ink);font-weight:700"}),
     el("p",{text:t("basics_"+STATE.instrument)})
@@ -1682,7 +1682,7 @@ function actBasics(){
 function actBuying(){
   app().appendChild(topbar(true));
   const nm=instName();
-  app().appendChild(el("div",{class:"screen-title",text:"🛒 "+t("act_buying")+" — "+nm}));
+  app().appendChild(el("div",{class:"screen-title",text:"🛒 "+t("act_buying")+", "+nm}));
   app().appendChild(el("div",{class:"panel"},[
     el("p",{text:t("buying_intro",{inst:nm}),style:"color:var(--ink);font-weight:700"}),
     el("p",{text:t("buying_"+STATE.instrument)}),
@@ -1706,7 +1706,7 @@ const VIDEOS_ADULT={
     {t:"Practising drums quietly at home", u:"https://www.youtube.com/results?search_query=practice+drums+quietly+electronic+kit+apartment", em:"🎧"}
   ],
   uku:[
-    {t:"Adult beginner ukulele — first lesson", u:"https://www.youtube.com/results?search_query=adult+beginner+ukulele+first+lesson", em:"🪕"},
+    {t:"Adult beginner ukulele, first lesson", u:"https://www.youtube.com/results?search_query=adult+beginner+ukulele+first+lesson", em:"🪕"},
     {t:"C, Am, F and your first songs", u:"https://www.youtube.com/results?search_query=ukulele+C+Am+F+easy+songs+beginner", em:"🎶"}
   ],
   synth:[
