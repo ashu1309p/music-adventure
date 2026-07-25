@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Music Adventure</title>
+<style>
+  :root{
+    --bg1:#6a5cff; --bg2:#ff5ca8; --card:#ffffff; --ink:#2a2350; --muted:#6b6690;
+    --pink:#ff5ca8; --purple:#7c5cff; --blue:#39c0ff; --green:#38d39f; --yellow:#ffd23f;
+    --orange:#ff9d3c; --red:#ff6b6b; --shadow:0 10px 0 rgba(0,0,0,.12), 0 18px 30px rgba(0,0,0,.18);
+    --radius:26px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",system-ui,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    background-attachment:fixed;
+    min-height:100%;
+    overflow-x:hidden;
+    user-select:none;
+  }
+  #app{max-width:960px; margin:0 auto; padding:16px 16px 60px; min-height:100vh;}
+  .topbar{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .topbar h1{color:#fff; font-size:clamp(22px,5vw,34px); margin:0; text-shadow:0 3px 0 rgba(0,0,0,.15);}
+  .spacer{flex:1;}
+  .pill{
+    background:rgba(255,255,255,.9); border:none; border-radius:999px; padding:10px 16px;
+    font-size:16px; font-weight:800; color:var(--ink); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);
+    font-family:inherit;
+  }
+  .pill:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12);}
+  .stars-pill{background:var(--yellow);}
+  .screen-title{color:#fff; text-align:center; font-size:clamp(24px,6vw,40px); margin:8px 0 4px; text-shadow:0 3px 0 rgba(0,0,0,.15);}
+  .screen-sub{color:#fff; text-align:center; font-size:clamp(15px,3.5vw,20px); margin:0 0 20px; opacity:.95;}
+  .grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
+  .card{
+    background:var(--card); border-radius:var(--radius); padding:22px 18px; cursor:pointer;
+    box-shadow:var(--shadow); text-align:center; transition:transform .08s; position:relative;
+    border:4px solid transparent;
+  }
+  .card:active{transform:translateY(4px) scale(.99);}
+  .card .emoji{font-size:52px; line-height:1; display:block; margin-bottom:8px;}
+  .card .label{font-size:22px; font-weight:800;}
+  .card .desc{font-size:15px; color:var(--muted); margin-top:6px; font-weight:600;}
+  .card.locked{opacity:.7; cursor:not-allowed;}
+  .card.locked::after{content:"🔒"; position:absolute; top:10px; right:12px; font-size:22px;}
+  .tag-soon{position:absolute; top:10px; left:12px; background:var(--yellow); color:var(--ink);
+    font-size:12px; font-weight:800; padding:3px 8px; border-radius:999px;}
+  .c-pink{border-color:var(--pink);} .c-purple{border-color:var(--purple);}
+  .c-blue{border-color:var(--blue);} .c-green{border-color:var(--green);}
+  .c-yellow{border-color:var(--yellow);} .c-orange{border-color:var(--orange);}
+  .panel{background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); margin-bottom:16px;}
+  .panel h2{margin:0 0 8px; font-size:24px;}
+  .panel p{font-size:17px; color:var(--muted); line-height:1.5; font-weight:600;}
+  .bigbtn{
+    display:inline-block; background:var(--green); color:#fff; border:none; border-radius:18px;
+    padding:16px 26px; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.18);
+    font-family:inherit; margin:6px;
+  }
+  .bigbtn:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  .bigbtn.alt{background:var(--purple);} .bigbtn.warn{background:var(--orange);} .bigbtn.mut{background:#b9b4d6;}
+  .row{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center;}
+  .center{text-align:center;}
+
+  /* piano */
+  .kb-wrap{overflow-x:auto; padding:10px 0; -webkit-overflow-scrolling:touch;}
+  .keyboard{position:relative; display:flex; height:210px; min-width:min-content; margin:0 auto; width:fit-content;}
+  .wkey{width:56px; height:210px; background:linear-gradient(#fff,#f0eefc); border:2px solid #d7d2ef;
+    border-radius:0 0 10px 10px; margin:0 1px; display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:10px; font-weight:800; color:#9a94c0; cursor:pointer; position:relative;}
+  .wkey:active,.wkey.on{background:linear-gradient(#ffe9a8,#ffd23f); color:#7a5b00;}
+  .bkey{width:36px; height:130px; background:linear-gradient(#4a4470,#231f3d); border-radius:0 0 8px 8px;
+    position:absolute; top:0; z-index:2; cursor:pointer; margin-left:-18px;}
+  .bkey:active,.bkey.on{background:linear-gradient(#ff8fc0,#ff5ca8);}
+  .key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
+  .bkey.key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
+
+  /* guitar */
+  .guitar{background:#3a2a18; border-radius:16px; padding:16px; }
+  .gstring{height:38px; margin:8px 0; position:relative; cursor:pointer; display:flex; align-items:center;}
+  .gstring .line{flex:1; height:4px; border-radius:4px; background:linear-gradient(90deg,#d9c48a,#f4e6b8);}
+  .gstring .lbl{width:34px; color:#f4e6b8; font-weight:800; text-align:center;}
+  .gstring.pluck .line{animation:vib .3s;}
+  @keyframes vib{0%,100%{transform:scaleY(1);}25%{transform:scaleY(2.6);}75%{transform:scaleY(.5);}}
+  .fretboard{background:#2a1c0f; border-radius:12px; padding:14px; color:#fff; display:inline-block;}
+  .fret-grid{display:grid; grid-template-columns:repeat(6,34px); gap:0;}
+  .fret-cell{width:34px; height:34px; border-right:2px solid #7a5a30; border-bottom:2px solid #7a5a30;
+    position:relative;}
+  .fret-cell.nut{border-top:6px solid #eee;}
+  .dot{width:24px; height:24px; border-radius:50%; background:var(--pink); color:#fff; font-weight:800;
+    display:flex; align-items:center; justify-content:center; position:absolute; top:5px; left:5px; font-size:13px;}
+  .open-mark{color:#8be28b; font-weight:800;} .mute-mark{color:#ff8a8a; font-weight:800;}
+
+  /* drums */
+  .kit{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; max-width:480px; margin:0 auto;}
+  .pad{border-radius:20px; padding:30px 10px; text-align:center; color:#fff; font-size:22px; font-weight:800;
+    cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.25); border:none; font-family:inherit;}
+  .pad:active,.pad.hit{transform:translateY(5px) scale(.98); box-shadow:0 3px 0 rgba(0,0,0,.25); filter:brightness(1.25);}
+  .pad.kick{background:var(--purple);} .pad.snare{background:var(--pink);}
+  .pad.hihat{background:var(--blue);} .pad.crash{background:var(--orange);}
+
+  .bb-grid{display:grid; gap:6px; margin:14px 0; overflow-x:auto;}
+  .bb-row{display:grid; grid-template-columns:70px repeat(8,1fr); gap:6px; align-items:center; min-width:420px;}
+  .bb-name{font-weight:800; font-size:14px;}
+  .bb-cell{aspect-ratio:1; border-radius:10px; background:#eae7fb; cursor:pointer; min-height:34px;}
+  .bb-cell.on{background:var(--green);}
+  .bb-cell.play{outline:4px solid var(--yellow);}
+
+  .choice{background:var(--card); border:4px solid var(--purple); border-radius:18px; padding:20px;
+    font-size:20px; font-weight:800; cursor:pointer; box-shadow:var(--shadow); font-family:inherit; color:var(--ink);}
+  .choice:active{transform:translateY(4px);}
+  .choice.right{background:var(--green); color:#fff; border-color:var(--green);}
+  .choice.wrong{background:var(--red); color:#fff; border-color:var(--red);}
+  .scorebar{font-size:20px; font-weight:800; color:#fff; text-align:center; margin:10px 0;}
+
+  .stars{font-size:34px; letter-spacing:4px; text-align:center; margin:10px 0;}
+  .tapzone{background:var(--yellow); border-radius:24px; height:180px; display:flex; align-items:center;
+    justify-content:center; font-size:26px; font-weight:800; cursor:pointer; box-shadow:var(--shadow); user-select:none;}
+  .tapzone:active{filter:brightness(1.1); transform:scale(.99);}
+  .beatdot{width:26px;height:26px;border-radius:50%;background:#fff3;display:inline-block;margin:4px;}
+  .beatdot.on{background:#fff; box-shadow:0 0 16px #fff;}
+
+  .video-link{display:flex; align-items:center; gap:12px; background:var(--card); border-radius:16px;
+    padding:14px; box-shadow:var(--shadow); text-decoration:none; color:var(--ink); font-weight:700; margin-bottom:10px;}
+  .video-link .em{font-size:30px;}
+  .video-link small{display:block; color:var(--muted); font-weight:600;}
+
+  .confetti{position:fixed; top:-20px; width:12px; height:18px; z-index:999; pointer-events:none; border-radius:3px;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg); opacity:1;}}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:14px 22px; border-radius:16px; font-weight:800; font-size:18px; z-index:1000; box-shadow:var(--shadow);}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   i18n DICTIONARY  — every user-facing string lives here.
+   English ships now. Hindi (hi) is a pure add: copy the `en`
+   object, translate values, keys stay identical.
+   Band-tuned copy uses keys suffixed _b1 (4-6) _b2 (7-9) _b3 (10-12).
+   ============================================================ */
+const I18N = {
+  en: {
+    app_title:"Music Adventure",
+    back:"⬅ Back", home:"🏠 Home", stars:"stars",
+    // entry
+    who_title:"Who's playing today?", who_sub:"Tap the one that's you",
+    band_b1:"Little Musicians", band_b1_age:"ages 4–6",
+    band_b2:"Music Explorers", band_b2_age:"ages 7–9",
+    band_b3:"Rising Stars", band_b3_age:"ages 10–12",
+    band_adult:"Grown-ups", band_adult_age:"coming soon!",
+    level_title:"Have you played before?", level_sub:"There's no wrong answer!",
+    level_new:"Never touched one", level_new_desc:"Let's start from the very beginning",
+    level_some:"I know a little", level_some_desc:"Let's build on what you know",
+    inst_title:"Pick your instrument!", inst_sub:"Tap one to start playing",
+    inst_piano:"Piano", inst_guitar:"Guitar", inst_drums:"Drums",
+    inst_uku:"Ukulele", inst_synth:"Keyboard", inst_voice:"Singing",
+    soon:"Soon",
+    // hub
+    hub_sub:"What do you want to do?",
+    act_meet:"Meet the Instrument", act_meet_desc:"See it, hear it, love it",
+    act_play:"Free Play", act_play_desc:"Just make some sound!",
+    act_songs:"Play a Song", act_songs_desc:"Follow the colored notes",
+    act_chords:"Chord Magic", act_chords_desc:"Learn real chord shapes",
+    act_beat:"Beat Builder", act_beat_desc:"Make your own drum loop",
+    act_echo:"Echo Game", act_echo_desc:"Copy the rhythm",
+    act_rhythm:"Rhythm Tapper", act_rhythm_desc:"Tap along to the beat",
+    act_ear:"Ear Detective", act_ear_desc:"Train your listening",
+    act_videos:"Watch & Wonder", act_videos_desc:"Cool music videos",
+    act_find:"Find the Note", act_find_desc:"Can you spot it?",
+    act_change:"Chord Change Race", act_change_desc:"Switch as fast as you can",
+    act_tab:"Read a Tab", act_tab_desc:"Play from real tab",
+    // meet
+    meet_piano_b1:"This is a PIANO! Press a key and it sings. Big keys make low sounds, tiny high keys go tweet-tweet!",
+    meet_piano_b2:"The piano has 88 keys. Press one and a soft hammer taps a string inside. Left keys are low, right keys are high.",
+    meet_piano_b3:"A piano is a percussion-string hybrid: each key swings a hammer onto tuned strings. 88 keys span 7+ octaves. You'll meet it in songs, film scores, and jazz.",
+    meet_guitar_b1:"This is a GUITAR! It has strings you pluck. Strum them all and it goes strummm!",
+    meet_guitar_b2:"A guitar has 6 strings. Pluck one for a note, press the neck to change it, strum many for a chord.",
+    meet_guitar_b3:"Six strings tuned E-A-D-G-B-E. Fretting shortens a string to raise its pitch; strumming several sounds a chord. Found in rock, folk, flamenco and more.",
+    meet_drums_b1:"These are DRUMS! Hit them and they go BOOM and tss! Every drum has its own sound.",
+    meet_drums_b2:"A drum kit has a kick (boom), snare (crack), hi-hat (tss) and crash (splash). Together they make the beat that keeps a song moving.",
+    meet_drums_b3:"The kit is your rhythm engine: kick and snare drive the backbeat, hi-hats subdivide time, cymbals accent. Drummers are the band's timekeepers.",
+    meet_try:"Try it now →",
+    // free play
+    play_piano_hint:"Tap the keys!", play_guitar_hint:"Tap a string, or hit STRUM!",
+    play_drums_hint:"Bang the pads!", strum:"STRUM ALL",
+    // songs
+    song_pick:"Pick a song", song_twinkle:"Twinkle Twinkle", song_mary:"Mary Had a Little Lamb",
+    song_ode:"Ode to Joy", song_birthday:"Happy Birthday",
+    song_watch:"Watch it play", song_yourturn:"Your turn — follow the glowing keys!",
+    song_welldone:"You played it! 🌟",
+    // chords
+    chord_pick:"Pick a chord to learn", chord_strum:"Strum this chord",
+    chord_em:"E minor", chord_g:"G major", chord_c:"C major",
+    chord_tip_open:"O = play this string open", chord_tip_num:"Numbers = which finger presses",
+    // rhythm
+    rhythm_intro:"When the light blinks, TAP! Keep the beat.",
+    rhythm_start:"Start the beat", rhythm_tap:"TAP!",
+    rhythm_result:"You caught {n} of {t} beats!",
+    // ear
+    ear_higher:"Which note was HIGHER?", ear_which:"Which instrument made that sound?",
+    ear_first:"First one", ear_second:"Second one", ear_again:"🔊 Hear again",
+    ear_done:"You scored {n} out of {t}!",
+    // beat builder
+    bb_play:"▶ Play loop", bb_stop:"■ Stop", bb_clear:"Clear", bb_tempo:"Speed",
+    bb_kick:"Kick", bb_snare:"Snare", bb_hihat:"Hi-hat", bb_crash:"Crash",
+    bb_hint:"Tap squares to turn drums on. Then press Play!",
+    // echo
+    echo_intro:"Listen to the rhythm, then tap it back!", echo_listen:"👂 Listen",
+    echo_yourturn:"Your turn!", echo_right:"Yes! Next one is longer…", echo_wrong:"Oops! Try that one again.",
+    echo_round:"Round {n}",
+    // change race
+    change_intro:"Switch between the two chords as many times as you can in 30 seconds!",
+    change_start:"Start race", change_count:"Changes: {n}", change_time:"Time: {s}s",
+    change_result:"You made {n} chord changes! 🎸",
+    // tab
+    tab_intro:"Tab shows which string to play. Tap the strings in order, left to right.",
+    tab_done:"Nice reading! 🎶",
+    // find note
+    find_intro:"Find and tap the {note} key!", find_right:"Yes! That's {note}!", find_wrong:"Not quite — try again!",
+    find_score:"Found {n} of {t}!",
+    // videos
+    videos_sub:"Ask a grown-up to watch with you. Opens in a new tab.",
+    // misc
+    coming_soon_title:"Coming soon!", coming_soon_msg:"We're still building this one. Check back later!",
+    great:"Great job!", nice:"Nice!", star_earned:"⭐ You earned a star!",
+    tap_to_continue:"Tap to continue",
+  }
+  // hi: { ... }  <- Phase 2: same keys, Hindi values.
+};
+
+/* ============================================================
+   STATE + ROUTER
+   ============================================================ */
+const STATE = {
+  lang:"en", band:null, level:null, instrument:null,
+  screen:"who", stack:[],
+  progress: loadProgress()
+};
+function loadProgress(){
+  try{ return JSON.parse(localStorage.getItem("ma_progress")||"{}"); }
+  catch(e){ return {}; }
+}
+function saveProgress(){
+  try{ localStorage.setItem("ma_progress", JSON.stringify(STATE.progress)); }catch(e){}
+}
+function totalStars(){ let s=0; for(const k in STATE.progress) s+=STATE.progress[k]; return s; }
+function awardStar(key){
+  if(!STATE.progress[key]){ STATE.progress[key]=1; saveProgress(); toast(t("star_earned")); return true; }
+  return false;
+}
+function t(key, vars){
+  let dict = I18N[STATE.lang] || I18N.en;
+  let s = (key in dict) ? dict[key] : (I18N.en[key]!==undefined ? I18N.en[key] : key);
+  if(vars){ for(const v in vars){ s = s.replace(new RegExp("\\{"+v+"\\}","g"), vars[v]); } }
+  return s;
+}
+// band-tuned text helper: returns t(base + '_' + bandKey)
+function bt(base){
+  const map={b1:"_b1",b2:"_b2",b3:"_b3",ad:"_ad"};
+  return t(base + (map[STATE.band]||"_b2"));
+}
+
+function go(screen, opts){
+  STATE.stack.push(STATE.screen);
+  STATE.screen = screen;
+  if(opts) Object.assign(STATE, opts);
+  render();
+  window.scrollTo(0,0);
+}
+function back(){
+  if(STATE.stack.length){ STATE.screen = STATE.stack.pop(); render(); window.scrollTo(0,0); }
+}
+function goHome(){ STATE.stack=[]; STATE.screen="who"; STATE.instrument=null; render(); window.scrollTo(0,0); }
+
+/* small DOM helper */
+function el(tag, attrs, children){
+  const e=document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k==="class") e.className=attrs[k];
+    else if(k==="html") e.innerHTML=attrs[k];
+    else if(k==="text") e.textContent=attrs[k];
+    else if(k.startsWith("on")&&typeof attrs[k]==="function") e.addEventListener(k.slice(2),attrs[k]);
+    else e.setAttribute(k,attrs[k]);
+  }
+  if(children) (Array.isArray(children)?children:[children]).forEach(c=>{
+    if(c==null) return;
+    e.appendChild(typeof c==="string"?document.createTextNode(c):c);
+  });
+  return e;
+}
+
+/* ============================================================
+   WEB AUDIO ENGINE — all sound synthesized, no files.
+   ============================================================ */
+let AC=null;
+function ensureAudio(){
+  if(!AC){ AC = new (window.AudioContext||window.webkitAudioContext)(); }
+  if(AC.state==="suspended") AC.resume();
+  return AC;
+}
+const NOTE_FREQ = (function(){
+  const names=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const f={};
+  for(let oct=1; oct<=6; oct++){
+    for(let i=0;i<12;i++){
+      const midi=12*(oct+1)+i;            // C4 = midi 60
+      f[names[i]+oct]=440*Math.pow(2,(midi-69)/12);
+    }
+  }
+  return f;
+})();
+function noteFreq(n){ return NOTE_FREQ[n] || 440; }
+
+function master(gainVal){
+  const g=AC.createGain(); g.gain.value=gainVal; g.connect(AC.destination); return g;
+}
+function playPiano(freq, dur){
+  ensureAudio(); dur=dur||1.2;
+  const t0=AC.currentTime;
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.5,t0+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  const o1=AC.createOscillator(); o1.type="triangle"; o1.frequency.value=freq;
+  const o2=AC.createOscillator(); o2.type="sine"; o2.frequency.value=freq*2;
+  const g2=AC.createGain(); g2.gain.value=0.3; o2.connect(g2);
+  o1.connect(g); g2.connect(g); g.connect(AC.destination);
+  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
+}
+function playGuitar(freq, dur){
+  ensureAudio(); dur=dur||1.6;
+  const t0=AC.currentTime;
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.55,t0+0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  const o1=AC.createOscillator(); o1.type="sawtooth"; o1.frequency.value=freq;
+  const o2=AC.createOscillator(); o2.type="triangle"; o2.frequency.value=freq;
+  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(3200,t0);
+  lp.frequency.exponentialRampToValueAtTime(700,t0+dur);
+  o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(AC.destination);
+  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
+}
+function playChord(freqs){ freqs.forEach((f,i)=> setTimeout(()=>playGuitar(f,1.8), i*45)); }
+
+let NOISE=null;
+function noiseBuffer(){
+  if(NOISE) return NOISE;
+  const b=AC.createBuffer(1, AC.sampleRate*1, AC.sampleRate);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  NOISE=b; return b;
+}
+function playDrum(type){
+  ensureAudio(); const t0=AC.currentTime;
+  if(type==="kick"){
+    const o=AC.createOscillator(); const g=AC.createGain();
+    o.frequency.setValueAtTime(150,t0); o.frequency.exponentialRampToValueAtTime(48,t0+0.14);
+    g.gain.setValueAtTime(0.9,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.3);
+    o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0+0.32);
+  } else if(type==="snare"){
+    const n=AC.createBufferSource(); n.buffer=noiseBuffer();
+    const bp=AC.createBiquadFilter(); bp.type="highpass"; bp.frequency.value=1400;
+    const g=AC.createGain(); g.gain.setValueAtTime(0.7,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.2);
+    n.connect(bp); bp.connect(g); g.connect(AC.destination);
+    const o=AC.createOscillator(); o.type="triangle"; o.frequency.value=180;
+    const g2=AC.createGain(); g2.gain.setValueAtTime(0.4,t0); g2.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
+    o.connect(g2); g2.connect(AC.destination);
+    n.start(t0); n.stop(t0+0.2); o.start(t0); o.stop(t0+0.12);
+  } else if(type==="hihat"){
+    const n=AC.createBufferSource(); n.buffer=noiseBuffer();
+    const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=7000;
+    const g=AC.createGain(); g.gain.setValueAtTime(0.4,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.05);
+    n.connect(hp); hp.connect(g); g.connect(AC.destination); n.start(t0); n.stop(t0+0.06);
+  } else if(type==="crash"){
+    const n=AC.createBufferSource(); n.buffer=noiseBuffer();
+    const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=5000;
+    const g=AC.createGain(); g.gain.setValueAtTime(0.5,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.7);
+    n.connect(hp); hp.connect(g); g.connect(AC.destination); n.start(t0); n.stop(t0+0.72);
+  }
+}
+
+/* ============================================================
+   CONFETTI + TOAST
+   ============================================================ */
+function confetti(){
+  const colors=["#ff5ca8","#7c5cff","#39c0ff","#38d39f","#ffd23f","#ff9d3c"];
+  for(let i=0;i<40;i++){
+    const c=el("div",{class:"confetti"});
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=colors[i%colors.length];
+    c.style.opacity=0;
+    c.style.animation="fall "+(1.6+Math.random()*1.4)+"s ease-in "+Math.random()*0.5+"s forwards";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3600);
+  }
+}
+let toastTimer=null;
+function toast(msg){
+  const old=document.querySelector(".toast"); if(old) old.remove();
+  const tEl=el("div",{class:"toast",text:msg});
+  document.body.appendChild(tEl);
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>tEl.remove(),1800);
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+function topbar(showBack){
+  const bar=el("div",{class:"topbar"});
+  if(showBack) bar.appendChild(el("button",{class:"pill",onclick:back,html:t("back")}));
+  bar.appendChild(el("button",{class:"pill",onclick:goHome,html:t("home")}));
+  bar.appendChild(el("div",{class:"spacer"}));
+  bar.appendChild(el("div",{class:"pill stars-pill",html:"⭐ "+totalStars()}));
+  return bar;
+}
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+const app=()=>document.getElementById("app");
+function clear(){ app().innerHTML=""; }
+
+function render(){
+  clear();
+  const s=STATE.screen;
+  if(s==="who") return screenWho();
+  if(s==="level") return screenLevel();
+  if(s==="instrument") return screenInstrument();
+  if(s==="hub") return screenHub();
+  if(s==="soon") return screenSoon();
+  if(s==="meet") return actMeet();
+  if(s==="play") return actFreePlay();
+  if(s==="songs") return actSongs();
+  if(s==="chords") return actChords();
+  if(s==="beat") return actBeatBuilder();
+  if(s==="echo") return actEcho();
+  if(s==="rhythm") return actRhythm();
+  if(s==="ear") return actEar();
+  if(s==="videos") return actVideos();
+  if(s==="find") return actFind();
+  if(s==="change") return actChange();
+  if(s==="tab") return actTab();
+  if(s==="warmup") return actWarmup();
+  if(s==="copy") return actCopy();
+  if(s==="match") return actMatch();
+  if(s==="basics") return actBasics();
+  if(s==="buying") return actBuying();
+  screenWho();
+}
+
+function screenWho(){
+  app().appendChild(topbar(false));
+  app().appendChild(el("h1",{class:"screen-title",text:"🎵 "+t("app_title")+" 🎵"}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("who_title")}));
+  const grid=el("div",{class:"grid"});
+  const bands=[
+    {k:"b1",c:"c-pink",em:"🐣",name:t("band_b1"),age:t("band_b1_age")},
+    {k:"b2",c:"c-blue",em:"🚀",name:t("band_b2"),age:t("band_b2_age")},
+    {k:"b3",c:"c-purple",em:"🌟",name:t("band_b3"),age:t("band_b3_age")},
+  ];
+  bands.forEach(b=>{
+    grid.appendChild(el("div",{class:"card "+b.c,onclick:()=>go("level",{band:b.k})},[
+      el("span",{class:"emoji",text:b.em}),
+      el("div",{class:"label",text:b.name}),
+      el("div",{class:"desc",text:b.age}),
+    ]));
+  });
+  // grown-ups (unlocked in phase 2)
+  grid.appendChild(el("div",{class:"card c-green",onclick:()=>go("level",{band:"ad"})},[
+    el("span",{class:"emoji",text:"🧑‍🎤"}),
+    el("div",{class:"label",text:t("band_adult")}),
+    el("div",{class:"desc",text:t("band_adult_age")}),
+  ]));
+  app().appendChild(grid);
+}
+
+function screenLevel(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:t("level_title")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("level_sub")}));
+  const grid=el("div",{class:"grid"});
+  [
+    {k:"new",c:"c-green",em:"🌱",name:t("level_new"),d:t("level_new_desc")},
+    {k:"some",c:"c-orange",em:"🎯",name:t("level_some"),d:t("level_some_desc")},
+  ].forEach(l=>{
+    grid.appendChild(el("div",{class:"card "+l.c,onclick:()=>go("instrument",{level:l.k})},[
+      el("span",{class:"emoji",text:l.em}),
+      el("div",{class:"label",text:l.name}),
+      el("div",{class:"desc",text:l.d}),
+    ]));
+  });
+  app().appendChild(grid);
+}
+
+function screenInstrument(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:t("inst_title")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("inst_sub")}));
+  const grid=el("div",{class:"grid"});
+  if(STATE.band==="ad"){
+    grid.appendChild(el("div",{class:"card c-yellow",onclick:()=>go("match")},[
+      el("span",{class:"emoji",text:"🧭"}),
+      el("div",{class:"label",text:t("act_match")}),
+      el("div",{class:"desc",text:t("act_match_desc")})
+    ]));
+  }
+  [
+    {k:"piano",c:"c-purple",em:"🎹",name:t("inst_piano")},
+    {k:"guitar",c:"c-orange",em:"🎸",name:t("inst_guitar")},
+    {k:"drums",c:"c-pink",em:"🥁",name:t("inst_drums")},
+  ].forEach(i=>{
+    grid.appendChild(el("div",{class:"card "+i.c,onclick:()=>go("hub",{instrument:i.k})},[
+      el("span",{class:"emoji",text:i.em}),
+      el("div",{class:"label",text:i.name}),
+    ]));
+  });
+  [
+    {k:"uku",em:"🪕",name:t("inst_uku"),c:"c-green"},
+    {k:"synth",em:"🎛️",name:t("inst_synth"),c:"c-blue"},
+    {k:"voice",em:"🎤",name:t("inst_voice"),c:"c-yellow"},
+  ].forEach(i=>{
+    grid.appendChild(el("div",{class:"card "+i.c,onclick:()=>go("hub",{instrument:i.k})},[
+      el("span",{class:"emoji",text:i.em}),
+      el("div",{class:"label",text:i.name}),
+    ]));
+  });
+  app().appendChild(grid);
+}
+
+const INST_EMOJI={piano:"🎹",guitar:"🎸",drums:"🥁",uku:"🪕",synth:"🎛️",voice:"🎤"};
+function instEmoji(){ return INST_EMOJI[STATE.instrument]||"🎵"; }
+function instName(){ return t("inst_"+STATE.instrument); }
+
+function screenHub(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:instEmoji()+" "+instName()}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("hub_sub")}));
+  const grid=el("div",{class:"grid"});
+  const add=(scr,em,label,desc,cls)=>{
+    grid.appendChild(el("div",{class:"card "+cls,onclick:()=>go(scr)},[
+      el("span",{class:"emoji",text:em}),
+      el("div",{class:"label",text:label}),
+      el("div",{class:"desc",text:desc}),
+    ]));
+  };
+  add("meet","👋",t("act_meet"),t("act_meet_desc"),"c-yellow");
+  add("play",instEmoji(),t("act_play"),t("act_play_desc"),"c-green");
+
+  if(STATE.instrument==="piano"){
+    add("songs","🎼",t("act_songs"),t("act_songs_desc"),"c-purple");
+    if(STATE.level==="some") add("find","🔍",t("act_find"),t("act_find_desc"),"c-pink");
+  }
+  if(STATE.instrument==="guitar"){
+    add("chords","✋",t("act_chords"),t("act_chords_desc"),"c-purple");
+    add("songs","🎼",t("act_songs"),t("act_songs_desc"),"c-blue");
+    if(STATE.level==="some") add("change","⚡",t("act_change"),t("act_change_desc"),"c-pink");
+    if(STATE.level==="some"&&STATE.band==="b3") add("tab","📖",t("act_tab"),t("act_tab_desc"),"c-orange");
+  }
+  if(STATE.instrument==="drums"){
+    add("beat","🧱",t("act_beat"),t("act_beat_desc"),"c-purple");
+    add("echo","🔁",t("act_echo"),t("act_echo_desc"),"c-blue");
+  }
+  if(STATE.instrument==="uku"){
+    add("chords","✋",t("act_chords"),t("act_chords_desc"),"c-purple");
+    add("songs","🎼",t("act_songs"),t("act_songs_desc"),"c-orange");
+  }
+  if(STATE.instrument==="synth"){
+    add("songs","🎼",t("act_songs"),t("act_songs_desc"),"c-purple");
+  }
+  if(STATE.instrument==="voice"){
+    add("warmup","🎶",t("act_warmup"),t("act_warmup_desc"),"c-purple");
+    add("copy","🔁",t("act_copy"),t("act_copy_desc"),"c-pink");
+  }
+  if(STATE.band==="ad"){
+    add("basics","📘",t("act_basics"),t("act_basics_desc"),"c-blue");
+    add("buying","🛒",t("act_buying"),t("act_buying_desc"),"c-green");
+  }
+  add("rhythm","👏",t("act_rhythm"),t("act_rhythm_desc"),"c-orange");
+  add("ear","👂",t("act_ear"),t("act_ear_desc"),"c-green");
+  add("videos","📺",t("act_videos"),t("act_videos_desc"),"c-blue");
+  app().appendChild(grid);
+}
+
+function screenSoon(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"panel center"},[
+    el("div",{class:"emoji",text:"🚧",style:"font-size:60px"}),
+    el("h2",{text:t("coming_soon_title")}),
+    el("p",{text:t("coming_soon_msg")}),
+    el("button",{class:"bigbtn",onclick:back,text:t("back").replace("⬅ ","")+" ⬅"})
+  ]));
+}
+
+/* ---------- MEET ---------- */
+function actMeet(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:instEmoji()+" "+t("act_meet")}));
+  app().appendChild(el("div",{class:"panel center"},[
+    el("div",{class:"emoji",text:instEmoji(),style:"font-size:80px"}),
+    el("p",{text:bt("meet_"+STATE.instrument),style:"font-size:19px;color:var(--ink)"}),
+    el("button",{class:"bigbtn",onclick:()=>{ demoInstrument(); },text:"🔊 "+instName()}),
+    el("div",{style:"height:8px"}),
+    el("button",{class:"bigbtn alt",onclick:()=>go("play"),text:t("meet_try")})
+  ]));
+  awardStar(STATE.instrument+"_meet");
+}
+function demoInstrument(){
+  ensureAudio();
+  if(STATE.instrument==="piano"){ ["C4","E4","G4","C5"].forEach((n,i)=>setTimeout(()=>playPiano(noteFreq(n)),i*220)); }
+  else if(STATE.instrument==="guitar"){ playChord([82.41,110,146.83,196,246.94,329.63]); }
+  else if(STATE.instrument==="drums"){ ["kick","hihat","snare","hihat","kick","hihat","snare","crash"].forEach((d,i)=>setTimeout(()=>playDrum(d),i*180)); }
+  else if(STATE.instrument==="uku"){ playChord([392.00,261.63,329.63,440.00].map(f=>f)); }
+  else if(STATE.instrument==="synth"){ ["C4","E4","G4","C5"].forEach((n,i)=>setTimeout(()=>playSynth(noteFreq(n),"bells"),i*220)); }
+  else if(STATE.instrument==="voice"){ ["C4","E4","G4","C5"].forEach((n,i)=>setTimeout(()=>playVoice(noteFreq(n),0.5),i*300)); }
+}
+
+/* ---------- FREE PLAY ---------- */
+function actFreePlay(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:instEmoji()+" "+t("act_play")}));
+  if(STATE.instrument==="piano"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_piano_hint")}));
+    app().appendChild(buildKeyboard());
+  } else if(STATE.instrument==="guitar"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_guitar_hint")}));
+    app().appendChild(buildGuitar(true));
+  } else if(STATE.instrument==="drums"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_drums_hint")}));
+    app().appendChild(buildDrumKit());
+  } else if(STATE.instrument==="uku"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_uku_hint")}));
+    app().appendChild(buildUke(true));
+  } else if(STATE.instrument==="synth"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_synth_hint")}));
+    app().appendChild(buildSynthFreePlay());
+  } else if(STATE.instrument==="voice"){
+    app().appendChild(el("div",{class:"screen-sub",text:t("play_voice_hint")}));
+    app().appendChild(buildVoiceLadder());
+  }
+  awardStar(STATE.instrument+"_play");
+}
+
+/* keyboard: octaves depend on band */
+function octaveCount(){ return STATE.band==="b1"?1:2; }
+function buildKeyboard(playFn){
+  const pf = playFn || ((f)=>playPiano(f));
+  const wrap=el("div",{class:"kb-wrap"});
+  const kb=el("div",{class:"keyboard"});
+  const whites=["C","D","E","F","G","A","B"];
+  const blackAfter={"C":"C#","D":"D#","F":"F#","G":"G#","A":"A#"};
+  const startOct=4, octs=octaveCount();
+  let wIndex=0;
+  const whiteEls=[];
+  for(let o=0;o<octs;o++){
+    for(const w of whites){
+      const noteName=w+(startOct+o);
+      const key=el("div",{class:"wkey",text:w,"data-note":noteName});
+      key.addEventListener("pointerdown",()=>{ pf(noteFreq(noteName)); flash(key); });
+      kb.appendChild(key); whiteEls.push({name:noteName,elm:key,idx:wIndex});
+      wIndex++;
+    }
+  }
+  // add a top C
+  const topC="C"+(startOct+octs);
+  const tk=el("div",{class:"wkey",text:"C","data-note":topC});
+  tk.addEventListener("pointerdown",()=>{ pf(noteFreq(topC)); flash(tk); });
+  kb.appendChild(tk); whiteEls.push({name:topC,elm:tk,idx:wIndex});
+
+  // position black keys
+  requestAnimationFrame(()=>{
+    let wi=0;
+    for(let o=0;o<octs;o++){
+      for(const w of whites){
+        if(blackAfter[w]){
+          const bn=blackAfter[w]+(startOct+o);
+          const bk=el("div",{class:"bkey","data-note":bn});
+          bk.style.left=(whiteEls[wi].elm.offsetLeft+whiteEls[wi].elm.offsetWidth)+"px";
+          bk.addEventListener("pointerdown",(e)=>{ e.stopPropagation(); pf(noteFreq(bn)); flash(bk); });
+          kb.appendChild(bk);
+        }
+        wi++;
+      }
+    }
+  });
+  wrap.appendChild(kb);
+  return wrap;
+}
+function flash(k){ k.classList.add("on"); setTimeout(()=>k.classList.remove("on"),160); }
+
+/* guitar */
+const GUITAR_STRINGS=[ // low to high
+  {lbl:"E",f:82.41},{lbl:"A",f:110.00},{lbl:"D",f:146.83},
+  {lbl:"G",f:196.00},{lbl:"B",f:246.94},{lbl:"e",f:329.63}
+];
+function buildGuitar(withStrum){
+  const box=el("div",{class:"guitar"});
+  const strings=[];
+  GUITAR_STRINGS.slice().reverse().forEach(s=>{
+    const row=el("div",{class:"gstring"},[
+      el("div",{class:"lbl",text:s.lbl}),
+      el("div",{class:"line"})
+    ]);
+    row.addEventListener("pointerdown",()=>{ playGuitar(s.f); row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck"); });
+    box.appendChild(row); strings.push({s,row});
+  });
+  if(withStrum){
+    const strum=el("div",{class:"center",style:"margin-top:12px"},[
+      el("button",{class:"bigbtn warn",text:"🎸 "+t("strum"),onclick:()=>{
+        GUITAR_STRINGS.forEach((s,i)=>setTimeout(()=>{ playGuitar(s.f); const r=strings[GUITAR_STRINGS.length-1-i].row; r.classList.remove("pluck"); void r.offsetWidth; r.classList.add("pluck"); },i*55));
+      }})
+    ]);
+    box.appendChild(strum);
+  }
+  return box;
+}
+
+/* drums */
+function buildDrumKit(){
+  const kit=el("div",{class:"kit"});
+  [["kick",t("bb_kick"),"🦵"],["snare",t("bb_snare"),"🥁"],["hihat",t("bb_hihat"),"🎩"],["crash",t("bb_crash"),"💥"]].forEach(([type,label,em])=>{
+    const pad=el("button",{class:"pad "+type},[el("div",{text:em,style:"font-size:34px"}),el("div",{text:label})]);
+    pad.addEventListener("pointerdown",()=>{ playDrum(type); pad.classList.add("hit"); setTimeout(()=>pad.classList.remove("hit"),110); });
+    kit.appendChild(pad);
+  });
+  return kit;
+}
+
+/* ---------- SONGS (piano + guitar-friendly melodies) ---------- */
+const SONGS={
+  twinkle:{name:()=>t("song_twinkle"), notes:["C4","C4","G4","G4","A4","A4","G4","F4","F4","E4","E4","D4","D4","C4"]},
+  mary:{name:()=>t("song_mary"), notes:["E4","D4","C4","D4","E4","E4","E4","D4","D4","D4","E4","G4","G4"]},
+  ode:{name:()=>t("song_ode"), notes:["E4","E4","F4","G4","G4","F4","E4","D4","C4","C4","D4","E4","E4","D4","D4"]},
+  birthday:{name:()=>t("song_birthday"), notes:["C4","C4","D4","C4","F4","E4","C4","C4","D4","C4","G4","F4","C4","C4","C5","A4","F4","E4","D4","A#4","A#4","A4","F4","G4","F4"]}
+};
+function songListForBand(){
+  if(STATE.band==="b1") return ["twinkle","mary"];
+  if(STATE.band==="b2") return ["twinkle","mary","ode"];
+  return ["twinkle","ode","birthday"];
+}
+function actSongs(){
+  if(STATE.instrument==="uku") return ukeSongScreen();
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("song_pick")}));
+  const grid=el("div",{class:"grid"});
+  songListForBand().forEach(id=>{
+    grid.appendChild(el("div",{class:"card c-purple",onclick:()=>playSongScreen(id)},[
+      el("span",{class:"emoji",text:"🎵"}),
+      el("div",{class:"label",text:SONGS[id].name()})
+    ]));
+  });
+  app().appendChild(grid);
+}
+let songKeyEls={};
+function playSongScreen(id){
+  clear();
+  const song=SONGS[id];
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎵 "+song.name()}));
+  const kbWrap=buildSongKeyboard(song);
+  app().appendChild(kbWrap);
+  const status=el("div",{class:"screen-sub",text:t("song_yourturn")});
+  app().appendChild(status);
+  app().appendChild(el("div",{class:"row"},[
+    el("button",{class:"bigbtn alt",text:"👀 "+t("song_watch"),onclick:()=>watchSong(song,status)}),
+  ]));
+  // your-turn tracking
+  songProgressIdx=0; songTarget=song; songStatusEl=status;
+  highlightNext();
+}
+let songProgressIdx=0, songTarget=null, songStatusEl=null;
+function buildSongKeyboard(song){
+  // build a keyboard covering needed notes
+  const wrap=el("div",{class:"kb-wrap"});
+  const kb=el("div",{class:"keyboard"});
+  const whites=["C","D","E","F","G","A","B"];
+  const blackAfter={"C":"C#","D":"D#","F":"F#","G":"G#","A":"A#"};
+  const octs=2, startOct=4;
+  songKeyEls={};
+  const whiteEls=[];
+  let wi=0;
+  for(let o=0;o<octs;o++){
+    for(const w of whites){
+      const nn=w+(startOct+o);
+      const key=el("div",{class:"wkey",text:w,"data-note":nn});
+      key.addEventListener("pointerdown",()=>onSongKey(nn,key));
+      kb.appendChild(key); whiteEls.push(key); songKeyEls[nn]=key; wi++;
+    }
+  }
+  const topC="C"+(startOct+octs);
+  const tk=el("div",{class:"wkey",text:"C","data-note":topC});
+  tk.addEventListener("pointerdown",()=>onSongKey(topC,tk));
+  kb.appendChild(tk); whiteEls.push(tk); songKeyEls[topC]=tk;
+  requestAnimationFrame(()=>{
+    let idx=0;
+    for(let o=0;o<octs;o++){
+      for(const w of whites){
+        if(blackAfter[w]){
+          const bn=blackAfter[w]+(startOct+o);
+          const bk=el("div",{class:"bkey","data-note":bn});
+          bk.style.left=(whiteEls[idx].offsetLeft+whiteEls[idx].offsetWidth)+"px";
+          bk.addEventListener("pointerdown",(e)=>{e.stopPropagation(); onSongKey(bn,bk);});
+          kb.appendChild(bk); songKeyEls[bn]=bk;
+        }
+        idx++;
+      }
+    }
+  });
+  wrap.appendChild(kb);
+  return wrap;
+}
+function watchSong(song,status){
+  clearHighlights();
+  status.textContent=t("song_watch")+"…";
+  song.notes.forEach((n,i)=>{
+    setTimeout(()=>{
+      playMelody(noteFreq(n));
+      const k=songKeyEls[n]; if(k){ k.classList.add("on"); setTimeout(()=>k.classList.remove("on"),260); }
+      if(i===song.notes.length-1){ setTimeout(()=>{ status.textContent=t("song_yourturn"); songProgressIdx=0; highlightNext(); },400); }
+    }, i*420);
+  });
+}
+function clearHighlights(){ for(const k in songKeyEls) songKeyEls[k].classList.remove("key-hi"); }
+function highlightNext(){
+  clearHighlights();
+  if(!songTarget) return;
+  if(songProgressIdx>=songTarget.notes.length){
+    songStatusEl.textContent=t("song_welldone"); confetti(); awardStar(STATE.instrument+"_song_"+ (Object.keys(SONGS).find(k=>SONGS[k]===songTarget)) );
+    return;
+  }
+  const n=songTarget.notes[songProgressIdx];
+  const k=songKeyEls[n]; if(k) k.classList.add("key-hi");
+}
+function onSongKey(note,key){
+  playMelody(noteFreq(note)); flash(key);
+  if(songTarget && note===songTarget.notes[songProgressIdx]){
+    songProgressIdx++; highlightNext();
+  }
+}
+
+/* ---------- CHORDS (guitar) ---------- */
+const CHORDS={
+  em:{name:()=>t("chord_em"), // string low->high: fret (0 open, -1 mute), finger
+      shape:[[0,0],[2,2],[2,3],[0,0],[0,0],[0,0]],
+      freqs:[82.41,123.47,164.81,196.00,246.94,329.63]},
+  g:{name:()=>t("chord_g"),
+      shape:[[3,2],[2,1],[0,0],[0,0],[0,0],[3,3]],
+      freqs:[98.00,123.47,146.83,196.00,246.94,392.00]},
+  c:{name:()=>t("chord_c"),
+      shape:[[-1,0],[3,3],[2,2],[0,0],[1,1],[0,0]],
+      freqs:[0,130.81,164.81,196.00,261.63,329.63]}
+};
+function actChords(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"✋ "+t("act_chords")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("chord_pick")}));
+  const grid=el("div",{class:"grid"});
+  const cs=chordSet();
+  cs.list.forEach(id=>{
+    grid.appendChild(el("div",{class:"card c-orange",onclick:()=>chordScreen(id)},[
+      el("span",{class:"emoji",text:instEmoji()}),
+      el("div",{class:"label",text:cs.map[id].name()})
+    ]));
+  });
+  app().appendChild(grid);
+}
+function chordScreen(id){
+  clear();
+  const ch=chordSet().map[id];
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎸 "+ch.name()}));
+  app().appendChild(el("div",{class:"center"},[buildFretDiagram(ch)]));
+  app().appendChild(el("div",{class:"panel center",style:"margin-top:14px"},[
+    el("p",{text:t("chord_tip_open")+" · "+t("chord_tip_num"),style:"font-size:15px"}),
+    el("button",{class:"bigbtn warn",text:"🔊 "+t("chord_strum"),onclick:()=>{
+      const fr=ch.freqs.filter(f=>f>0); (STATE.instrument==="uku"?playUkeChord:playChord)(fr); confetti(); awardStar(STATE.instrument+"_chord_"+id);
+    }})
+  ]));
+}
+function buildFretDiagram(ch){
+  // 6 strings (rows shown low->high top->bottom), 4 frets
+  const board=el("div",{class:"fretboard"});
+  const labelRow=el("div",{style:"display:flex; gap:0; margin-bottom:4px;"});
+  ch.shape.forEach((s)=>{
+    let m = s[0]===0?"O":(s[0]===-1?"✕":"");
+    labelRow.appendChild(el("div",{class:s[0]===0?"open-mark":"mute-mark",style:"width:34px;text-align:center;font-size:15px",text:m}));
+  });
+  board.appendChild(labelRow);
+  const grid=el("div",{class:"fret-grid"});
+  grid.style.gridTemplateColumns="repeat("+ch.shape.length+",34px)";
+  for(let fret=1;fret<=4;fret++){
+    ch.shape.forEach((s)=>{
+      const cell=el("div",{class:"fret-cell"+(fret===1?" nut":"")});
+      if(s[0]===fret){
+        cell.appendChild(el("div",{class:"dot",text:String(s[1])}));
+      }
+      grid.appendChild(cell);
+    });
+  }
+  board.appendChild(grid);
+  return board;
+}
+
+/* ---------- BEAT BUILDER (drums) ---------- */
+let bbState=null, bbTimer=null;
+function actBeatBuilder(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🧱 "+t("act_beat")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("bb_hint")}));
+  const rows=[["kick",t("bb_kick")],["snare",t("bb_snare")],["hihat",t("bb_hihat")],["crash",t("bb_crash")]];
+  bbState={grid:{}, step:-1, playing:false, tempo:110};
+  rows.forEach(r=>bbState.grid[r[0]]=new Array(8).fill(false));
+  const gridWrap=el("div",{class:"bb-grid"});
+  rows.forEach(([type,label])=>{
+    const row=el("div",{class:"bb-row"});
+    row.appendChild(el("div",{class:"bb-name",text:label}));
+    for(let i=0;i<8;i++){
+      const cell=el("div",{class:"bb-cell","data-type":type,"data-i":i});
+      cell.addEventListener("pointerdown",()=>{
+        bbState.grid[type][i]=!bbState.grid[type][i];
+        cell.classList.toggle("on",bbState.grid[type][i]);
+        if(bbState.grid[type][i]) playDrum(type);
+      });
+      row.appendChild(cell);
+    }
+    gridWrap.appendChild(row);
+  });
+  app().appendChild(gridWrap);
+  const ctrl=el("div",{class:"row"});
+  const playBtn=el("button",{class:"bigbtn",text:t("bb_play")});
+  playBtn.addEventListener("click",()=>{
+    if(bbState.playing){ stopBB(playBtn); } else { startBB(playBtn); }
+  });
+  ctrl.appendChild(playBtn);
+  ctrl.appendChild(el("button",{class:"bigbtn mut",text:t("bb_clear"),onclick:()=>{
+    for(const t in bbState.grid) bbState.grid[t].fill(false);
+    document.querySelectorAll(".bb-cell").forEach(c=>c.classList.remove("on"));
+  }}));
+  // tempo
+  const tempoWrap=el("div",{class:"row",style:"margin-top:8px"});
+  tempoWrap.appendChild(el("div",{style:"font-weight:800;color:#fff",text:"🐢"}));
+  const slider=el("input",{type:"range",min:"70",max:"160",value:"110",style:"width:180px"});
+  slider.addEventListener("input",()=>{ bbState.tempo=+slider.value; if(bbState.playing){ stopBB(playBtn); startBB(playBtn);} });
+  tempoWrap.appendChild(slider);
+  tempoWrap.appendChild(el("div",{style:"font-weight:800;color:#fff",text:"🐇"}));
+  app().appendChild(ctrl);
+  app().appendChild(tempoWrap);
+}
+function startBB(btn){
+  ensureAudio(); bbState.playing=true; btn.textContent=t("bb_stop"); bbState.step=-1;
+  const interval=(60/bbState.tempo)/2*1000; // eighth notes
+  bbTimer=setInterval(()=>{
+    if(bbState.step>=0){ const prev=document.querySelector('.bb-cell[data-i="'+bbState.step+'"]'); }
+    document.querySelectorAll(".bb-cell.play").forEach(c=>c.classList.remove("play"));
+    bbState.step=(bbState.step+1)%8;
+    for(const type in bbState.grid){
+      if(bbState.grid[type][bbState.step]) playDrum(type);
+    }
+    document.querySelectorAll('.bb-cell[data-i="'+bbState.step+'"]').forEach(c=>c.classList.add("play"));
+    if(bbState.step===7) awardStar("drums_beat");
+  }, interval);
+}
+function stopBB(btn){
+  bbState.playing=false; btn.textContent=t("bb_play"); clearInterval(bbTimer);
+  document.querySelectorAll(".bb-cell.play").forEach(c=>c.classList.remove("play"));
+}
+
+/* ---------- ECHO GAME (drums) ---------- */
+let echoSeq=[], echoInput=[], echoRound=1, echoPads={};
+function actEcho(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🔁 "+t("act_echo")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("echo_intro")}));
+  const status=el("div",{class:"scorebar",text:t("echo_round",{n:echoRound})});
+  app().appendChild(status);
+  const kit=el("div",{class:"kit"}); echoPads={};
+  [["kick",t("bb_kick"),"🦵"],["snare",t("bb_snare"),"🥁"],["hihat",t("bb_hihat"),"🎩"],["crash",t("bb_crash"),"💥"]].forEach(([type,label,em])=>{
+    const pad=el("button",{class:"pad "+type},[el("div",{text:em,style:"font-size:30px"}),el("div",{text:label})]);
+    pad.addEventListener("pointerdown",()=>echoTap(type,pad,status));
+    echoPads[type]=pad; kit.appendChild(pad);
+  });
+  app().appendChild(kit);
+  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
+    el("button",{class:"bigbtn",text:t("echo_listen"),onclick:()=>echoPlay(status)})
+  ]));
+  echoRound=1; echoNewSeq(status);
+}
+function echoNewSeq(status){
+  const types=["kick","snare","hihat","crash"];
+  echoSeq=[]; const len=echoRound+1;
+  for(let i=0;i<len;i++) echoSeq.push(types[Math.floor(Math.random()*3)]); // avoid crash for clarity mostly
+  echoInput=[]; status.textContent=t("echo_round",{n:echoRound});
+  setTimeout(()=>echoPlay(status),500);
+}
+function echoPlay(status){
+  echoInput=[]; status.textContent="👂…";
+  echoSeq.forEach((type,i)=>{
+    setTimeout(()=>{ playDrum(type); const p=echoPads[type]; p.classList.add("hit"); setTimeout(()=>p.classList.remove("hit"),160);
+      if(i===echoSeq.length-1) setTimeout(()=>status.textContent=t("echo_yourturn"),300);
+    }, i*520);
+  });
+}
+function echoTap(type,pad,status){
+  playDrum(type); pad.classList.add("hit"); setTimeout(()=>pad.classList.remove("hit"),110);
+  echoInput.push(type);
+  const idx=echoInput.length-1;
+  if(echoSeq[idx]!==type){ status.textContent=t("echo_wrong"); echoInput=[]; setTimeout(()=>echoPlay(status),800); return; }
+  if(echoInput.length===echoSeq.length){
+    status.textContent=t("echo_right"); confetti(); awardStar("drums_echo");
+    echoRound++; setTimeout(()=>echoNewSeq(status),1000);
+  }
+}
+
+/* ---------- RHYTHM TAPPER (shared) ---------- */
+function rhythmConfig(){
+  if(STATE.band==="b1") return {tempo:90,beats:4};
+  if(STATE.band==="b2") return {tempo:110,beats:8};
+  return {tempo:130,beats:8};
+}
+let rhythmData=null;
+function actRhythm(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"👏 "+t("act_rhythm")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("rhythm_intro")}));
+  const cfg=rhythmConfig();
+  const dots=el("div",{class:"center",style:"margin:10px"});
+  const dotEls=[];
+  for(let i=0;i<cfg.beats;i++){ const d=el("span",{class:"beatdot"}); dots.appendChild(d); dotEls.push(d); }
+  app().appendChild(dots);
+  const status=el("div",{class:"scorebar",text:""});
+  app().appendChild(status);
+  const zone=el("div",{class:"tapzone",text:t("rhythm_tap")});
+  app().appendChild(zone);
+  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
+    el("button",{class:"bigbtn",text:t("rhythm_start"),onclick:()=>runRhythm(cfg,dotEls,zone,status)})
+  ]));
+}
+function runRhythm(cfg,dotEls,zone,status){
+  ensureAudio();
+  const beatMs=60000/cfg.tempo;
+  const beatTimes=[]; const now=performance.now();
+  let taps=[]; rhythmData={beatTimes,taps,window:beatMs*0.4};
+  const startDelay=800;
+  for(let i=0;i<cfg.beats;i++){
+    const bt=startDelay + i*beatMs;
+    beatTimes.push(now+bt);
+    setTimeout(()=>{ playDrum("hihat"); dotEls[i].classList.add("on"); setTimeout(()=>dotEls[i].classList.remove("on"),160); }, bt);
+  }
+  const tapHandler=()=>{ rhythmData.taps.push(performance.now()); zone.style.filter="brightness(1.15)"; setTimeout(()=>zone.style.filter="",100); };
+  zone.onpointerdown=tapHandler;
+  setTimeout(()=>{
+    zone.onpointerdown=null;
+    // score: each beat matched by nearest tap within window
+    let hits=0; const used=new Set();
+    beatTimes.forEach(bt=>{
+      let best=-1,bestd=1e9;
+      rhythmData.taps.forEach((tp,idx)=>{ if(used.has(idx))return; const d=Math.abs(tp-bt); if(d<bestd){bestd=d;best=idx;} });
+      if(best>=0 && bestd<=rhythmData.window){ hits++; used.add(best); }
+    });
+    status.textContent=t("rhythm_result",{n:hits,t:cfg.beats});
+    if(hits>=Math.ceil(cfg.beats*0.6)){ confetti(); awardStar(STATE.instrument+"_rhythm"); }
+  }, startDelay + cfg.beats*beatMs + beatMs);
+}
+
+/* ---------- EAR DETECTIVE (shared) ---------- */
+let earScore=0, earRound=0, earTotal=5, earMode="higher", earAnswer=null;
+function actEar(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"👂 "+t("act_ear")}));
+  earScore=0; earRound=0; earTotal=5;
+  // younger bands: higher/lower only; older: mix in instrument id
+  earNextQuestion();
+}
+function earNextQuestion(){
+  clear(); app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"👂 "+t("act_ear")}));
+  if(earRound>=earTotal){
+    app().appendChild(el("div",{class:"panel center"},[
+      el("div",{class:"stars",text:"⭐".repeat(Math.max(1,Math.round(earScore/earTotal*3)))}),
+      el("h2",{text:t("ear_done",{n:earScore,t:earTotal})}),
+      el("button",{class:"bigbtn",text:t("home").replace("🏠 ",""),onclick:()=>go("hub")})
+    ]));
+    if(earScore>=3){ confetti(); awardStar(STATE.instrument+"_ear"); }
+    return;
+  }
+  app().appendChild(el("div",{class:"scorebar",text:"⭐ "+earScore+" / "+earTotal}));
+  const useInstr = (STATE.band!=="b1") && (earRound%2===1);
+  if(useInstr){ earMode="which"; earWhichQuestion(); }
+  else { earMode="higher"; earHigherQuestion(); }
+}
+function earHigherQuestion(){
+  const pool=["C4","D4","E4","G4","A4","C5","D5","E5","G5"];
+  let a=pool[Math.floor(Math.random()*pool.length)], b;
+  do{ b=pool[Math.floor(Math.random()*pool.length)]; }while(noteFreq(b)===noteFreq(a));
+  earAnswer = noteFreq(a)>noteFreq(b) ? "first":"second";
+  app().appendChild(el("div",{class:"screen-sub",text:t("ear_higher")}));
+  const playBoth=()=>{ playPiano(noteFreq(a)); setTimeout(()=>playPiano(noteFreq(b)),700); };
+  app().appendChild(el("div",{class:"row"},[el("button",{class:"bigbtn alt",text:t("ear_again"),onclick:playBoth})]));
+  const opts=el("div",{class:"grid",style:"margin-top:16px"});
+  [["first",t("ear_first")],["second",t("ear_second")]].forEach(([val,label])=>{
+    opts.appendChild(el("div",{class:"choice",text:label,onclick:(e)=>earAnswerPick(val,e.currentTarget)}));
+  });
+  app().appendChild(opts);
+  setTimeout(playBoth,400);
+}
+function earWhichQuestion(){
+  const kinds=[["piano","🎹",t("inst_piano")],["guitar","🎸",t("inst_guitar")],["drums","🥁",t("inst_drums")]];
+  const pick=kinds[Math.floor(Math.random()*kinds.length)];
+  earAnswer=pick[0];
+  const playIt=()=>{
+    if(pick[0]==="piano") playPiano(noteFreq("C4"));
+    else if(pick[0]==="guitar") playGuitar(196);
+    else playDrum("snare");
+  };
+  app().appendChild(el("div",{class:"screen-sub",text:t("ear_which")}));
+  app().appendChild(el("div",{class:"row"},[el("button",{class:"bigbtn alt",text:t("ear_again"),onclick:playIt})]));
+  const opts=el("div",{class:"grid",style:"margin-top:16px"});
+  kinds.forEach(([val,em,label])=>{
+    opts.appendChild(el("div",{class:"choice",html:em+"<br>"+label,onclick:(e)=>earAnswerPick(val,e.currentTarget)}));
+  });
+  app().appendChild(opts);
+  setTimeout(playIt,400);
+}
+function earAnswerPick(val,elm){
+  const correct = val===earAnswer;
+  elm.classList.add(correct?"right":"wrong");
+  if(correct) earScore++;
+  earRound++;
+  setTimeout(earNextQuestion, 900);
+}
+
+/* ---------- FIND THE NOTE (piano, know-a-little) ---------- */
+let findScore=0, findRound=0, findTotal=5, findTarget=null;
+function actFind(){
+  findScore=0; findRound=0; findTotal=5;
+  findNext();
+}
+function findNext(){
+  clear(); app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🔍 "+t("act_find")}));
+  if(findRound>=findTotal){
+    app().appendChild(el("div",{class:"panel center"},[
+      el("div",{class:"stars",text:"⭐".repeat(Math.max(1,Math.round(findScore/findTotal*3)))}),
+      el("h2",{text:t("find_score",{n:findScore,t:findTotal})}),
+      el("button",{class:"bigbtn",onclick:()=>go("hub"),text:t("home").replace("🏠 ","")})
+    ]));
+    if(findScore>=3){ confetti(); awardStar("piano_find"); }
+    return;
+  }
+  const whiteNotes=["C4","D4","E4","F4","G4","A4","B4","C5"];
+  findTarget=whiteNotes[Math.floor(Math.random()*whiteNotes.length)];
+  const letter=findTarget.replace(/[0-9]/g,"");
+  app().appendChild(el("div",{class:"scorebar",text:"⭐ "+findScore+" / "+findTotal}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("find_intro",{note:letter})}));
+  // keyboard, no letters shown for challenge? show letters for fairness on younger; hide names to make it a game -> show names but ask by name is trivial. Play the note as clue, keys unlabeled.
+  const wrap=el("div",{class:"kb-wrap"}); const kb=el("div",{class:"keyboard"});
+  whiteNotes.forEach(nn=>{
+    const key=el("div",{class:"wkey","data-note":nn}); // no visible letter -> find by sound/name
+    key.addEventListener("pointerdown",()=>{
+      playPiano(noteFreq(nn)); flash(key);
+      if(nn===findTarget){ toast(t("find_right",{note:letter})); findScore++; findRound++; setTimeout(findNext,700); }
+      else { toast(t("find_wrong")); }
+    });
+    kb.appendChild(key);
+  });
+  wrap.appendChild(kb); app().appendChild(wrap);
+  app().appendChild(el("div",{class:"row",style:"margin-top:12px"},[
+    el("button",{class:"bigbtn alt",text:t("ear_again"),onclick:()=>playPiano(noteFreq(findTarget))})
+  ]));
+  setTimeout(()=>playPiano(noteFreq(findTarget)),400);
+}
+
+/* ---------- CHORD CHANGE RACE (guitar, know-a-little) ---------- */
+function actChange(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"⚡ "+t("act_change")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("change_intro")}));
+  const pairA=CHORDS.em, pairB=CHORDS.g;
+  let current="em", changes=0, running=false, timeLeft=30, timer=null;
+  const statusEl=el("div",{class:"scorebar",text:t("change_count",{n:0})+"   "+t("change_time",{s:30})});
+  app().appendChild(statusEl);
+  const chordWrap=el("div",{class:"center"});
+  const render1=()=>{ chordWrap.innerHTML=""; chordWrap.appendChild(buildFretDiagram(current==="em"?pairA:pairB));
+    chordWrap.appendChild(el("div",{class:"screen-sub",text:(current==="em"?pairA.name():pairB.name())})); };
+  render1();
+  app().appendChild(chordWrap);
+  const switchBtn=el("button",{class:"bigbtn warn",text:"🔄 "+t("chord_strum")});
+  switchBtn.addEventListener("click",()=>{
+    if(!running) return;
+    const ch=current==="em"?pairA:pairB; playChord(ch.freqs.filter(f=>f>0));
+    current=current==="em"?"g":"em"; changes++; render1();
+    statusEl.textContent=t("change_count",{n:changes})+"   "+t("change_time",{s:timeLeft});
+  });
+  const startBtn=el("button",{class:"bigbtn",text:t("change_start")});
+  startBtn.addEventListener("click",()=>{
+    if(running) return; running=true; changes=0; timeLeft=30;
+    timer=setInterval(()=>{
+      timeLeft--; statusEl.textContent=t("change_count",{n:changes})+"   "+t("change_time",{s:timeLeft});
+      if(timeLeft<=0){ clearInterval(timer); running=false;
+        statusEl.textContent=t("change_result",{n:changes}); confetti(); if(changes>=6) awardStar("guitar_change");
+      }
+    },1000);
+  });
+  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[startBtn,switchBtn]));
+}
+
+/* ---------- TAB READING (guitar, 10-12 know-a-little) ---------- */
+function actTab(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"📖 "+t("act_tab")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("tab_intro")}));
+  // simple tab: sequence of open strings (index into GUITAR_STRINGS low->high)
+  const seq=[0,1,2,3,2,1,0,3]; // string indices
+  let pos=0;
+  const names=["E","A","D","G","B","e"];
+  const tabEl=el("div",{class:"panel",style:"font-family:monospace;font-size:20px;overflow-x:auto"});
+  const renderTab=()=>{
+    tabEl.innerHTML="";
+    for(let str=5;str>=0;str--){
+      let line=names[str]+" |";
+      seq.forEach((s,i)=>{ line += (s===str? (i===pos?"[0]":" 0 ") : " - ") ; });
+      tabEl.appendChild(el("div",{text:line}));
+    }
+  };
+  renderTab();
+  app().appendChild(tabEl);
+  const guitar=buildGuitar(false);
+  app().appendChild(guitar);
+  // override string taps to check order
+  const rows=guitar.querySelectorAll(".gstring");
+  // rows are high->low (reversed). map displayed row index to string index:
+  rows.forEach((row,dispIdx)=>{
+    const stringIdx=5-dispIdx; // because reversed
+    row.onpointerdown=()=>{
+      playGuitar(GUITAR_STRINGS[stringIdx].f); row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck");
+      if(seq[pos]===stringIdx){ pos++; renderTab();
+        if(pos>=seq.length){ toast(t("tab_done")); confetti(); awardStar("guitar_tab"); pos=0; setTimeout(renderTab,1200); }
+      }
+    };
+  });
+}
+
+/* ---------- VIDEOS ---------- */
+const VIDEOS={
+  piano:[
+    {t:"How a piano works (inside look)", u:"https://www.youtube.com/results?search_query=how+a+piano+works+inside+for+kids", em:"🎹", who:"all"},
+    {t:"Kids piano — Twinkle Twinkle tutorial", u:"https://www.youtube.com/results?search_query=twinkle+twinkle+easy+piano+for+kids", em:"⭐", who:"b1"},
+    {t:"Amazing young pianist performance", u:"https://www.youtube.com/results?search_query=talented+kid+piano+performance", em:"🌟", who:"all"}
+  ],
+  guitar:[
+    {t:"How a guitar makes sound", u:"https://www.youtube.com/results?search_query=how+a+guitar+makes+sound+for+kids", em:"🎸", who:"all"},
+    {t:"Your first 3 easy chords", u:"https://www.youtube.com/results?search_query=first+easy+guitar+chords+Em+G+C+beginner", em:"✋", who:"b3"},
+    {t:"Fun kids strum-along song", u:"https://www.youtube.com/results?search_query=easy+guitar+strum+along+song+for+kids", em:"🎶", who:"all"}
+  ],
+  drums:[
+    {t:"Parts of a drum kit explained", u:"https://www.youtube.com/results?search_query=parts+of+a+drum+kit+for+kids", em:"🥁", who:"all"},
+    {t:"Your first easy drum beat", u:"https://www.youtube.com/results?search_query=first+easy+drum+beat+beginner", em:"🧱", who:"b2"},
+    {t:"Awesome kid drummer", u:"https://www.youtube.com/results?search_query=amazing+kid+drummer", em:"🌟", who:"all"}
+  ]
+};
+function actVideos(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"📺 "+t("act_videos")}));
+  app().appendChild(el("div",{class:"screen-sub",text:STATE.band==="ad"?t("videos_sub_ad"):t("videos_sub")}));
+  const list=el("div",{});
+  const vsrc=(STATE.band==="ad" && typeof VIDEOS_ADULT!=="undefined" && VIDEOS_ADULT[STATE.instrument]) || VIDEOS[STATE.instrument] || [];
+  vsrc.forEach(v=>{
+    list.appendChild(el("a",{class:"video-link",href:v.u,target:"_blank",rel:"noopener"},[
+      el("div",{class:"em",text:v.em}),
+      el("div",{},[ el("div",{text:v.t}), el("small",{text:v.u.includes("results?")?"YouTube search":"YouTube"}) ])
+    ]));
+  });
+  app().appendChild(list);
+  awardStar(STATE.instrument+"_videos");
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+render();
+</script>
+
+<script>
+"use strict";
+/* ============================================================
+   PHASE 2 — MORE INSTRUMENTS (ukulele, keyboard/synth, singing)
+   Shares global scope with the main script. All strings added to
+   the same i18n dictionary; all sound synthesized; NO microphone.
+   ============================================================ */
+
+/* ---- i18n additions (same dictionary, keys stay identical for HI later) ---- */
+Object.assign(I18N.en, {
+  play_uku_hint:"Tap a string, or hit STRUM!",
+  play_synth_hint:"Pick a sound, then play the keys!",
+  play_voice_hint:"Tap a step and sing along!",
+  meet_uku_b1:"This is a UKULELE! Four little strings you strum. It goes plinky-plink and happy!",
+  meet_uku_b2:"A ukulele has 4 strings. Strum them together for a chord, or pluck one for a single note. It's small, cheerful and easy to hold.",
+  meet_uku_b3:"The ukulele has 4 strings tuned g-C-E-A (the top g is a high 're-entrant' string). A handful of easy chord shapes unlocks hundreds of songs, which is why it's a great first instrument.",
+  meet_synth_b1:"This is a KEYBOARD that changes its sound! Bells, space, robot. Pick a sound and play!",
+  meet_synth_b2:"A synth keyboard makes electronic sounds. The same keys can sound like bells, a spaceship or a robot. You choose the voice!",
+  meet_synth_b3:"A synthesizer builds sound from electronic waves. Changing the wave shape and filters gives totally different voices from the same keys. It powers most pop, film and game music.",
+  meet_voice_b1:"Your VOICE is an instrument too! Sing high, sing low, sing la-la-la!",
+  meet_voice_b2:"Singing uses the instrument you carry everywhere, your voice! We warm up with do-re-mi and copy little tunes. Nothing is recorded.",
+  meet_voice_b3:"Your voice is a wind instrument: air from your lungs vibrates your vocal folds and your mouth shapes the sound. Warming up and matching pitch are how every singer trains. Nothing here is recorded.",
+  act_sound_pick:"Pick your sound",
+  sound_piano:"Piano", sound_bells:"Bells", sound_space:"Space", sound_robot:"Robot",
+  act_warmup:"Warm-Up Ladder", act_warmup_desc:"Sing up the do-re-mi steps",
+  act_copy:"Copy the Tune", act_copy_desc:"I sing, you sing back",
+  warmup_intro:"Tap each step and sing along. Do, Re, Mi, all the way up!",
+  warmup_play:"▶ Hear the whole ladder",
+  copy_intro:"I'll sing a little tune. Listen, then sing it back!",
+  copy_listen:"🔊 Hear it again",
+  copy_youtry:"Your turn. Sing it out loud, then tap when you've had a go.",
+  copy_did:"I sang it! ⭐",
+  copy_round:"Tune {n}",
+  chord_am:"A minor", chord_f:"F major",
+  uke_song_intro:"Strum on every beat! Tap STRUM to play each chord in order.",
+  uke_song_done:"You strummed the whole song! 🌟",
+  uke_next_chord:"Next: {c}",
+  voice_privacy:"🔒 Nothing is recorded. Just sing and have fun!"
+});
+
+/* ---- audio: new voices ---- */
+let CURRENT_VOICE = "bells";
+function playSynth(freq, voice, dur){
+  ensureAudio();
+  voice = voice || "piano";
+  if(voice==="piano") return playPiano(freq, dur);
+  const t0=AC.currentTime;
+  dur = dur || (voice==="bells"?2.2 : voice==="space"?1.8 : 1.0);
+  const g=AC.createGain();
+  const attack = voice==="space"?0.12:0.006;
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.4,t0+attack);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  const oscs=[];
+  if(voice==="bells"){
+    const o1=AC.createOscillator(); o1.type="sine"; o1.frequency.value=freq;
+    const o2=AC.createOscillator(); o2.type="sine"; o2.frequency.value=freq*3.01;
+    const g2=AC.createGain(); g2.gain.value=0.25; o2.connect(g2);
+    o1.connect(g); g2.connect(g); oscs.push(o1,o2);
+  } else if(voice==="space"){
+    const o1=AC.createOscillator(); o1.type="sawtooth"; o1.frequency.value=freq*0.995;
+    const o2=AC.createOscillator(); o2.type="sawtooth"; o2.frequency.value=freq*1.005;
+    const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1500;
+    o1.connect(lp); o2.connect(lp); lp.connect(g); oscs.push(o1,o2);
+  } else { // robot
+    const o1=AC.createOscillator(); o1.type="square"; o1.frequency.value=freq;
+    const lfo=AC.createOscillator(); lfo.type="sine"; lfo.frequency.value=7;
+    const lg=AC.createGain(); lg.gain.value=freq*0.02; lfo.connect(lg); lg.connect(o1.frequency);
+    o1.connect(g); oscs.push(o1,lfo);
+  }
+  g.connect(AC.destination);
+  oscs.forEach(o=>{ o.start(t0); o.stop(t0+dur); });
+}
+function playUke(freq, dur){
+  ensureAudio(); dur=dur||1.0; const t0=AC.currentTime;
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.5,t0+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  const o1=AC.createOscillator(); o1.type="triangle"; o1.frequency.value=freq;
+  const o2=AC.createOscillator(); o2.type="square"; o2.frequency.value=freq;
+  const g2=AC.createGain(); g2.gain.value=0.16; o2.connect(g2);
+  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(4500,t0);
+  lp.frequency.exponentialRampToValueAtTime(1200,t0+dur);
+  o1.connect(lp); g2.connect(lp); lp.connect(g); g.connect(AC.destination);
+  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
+}
+function playUkeChord(freqs){ freqs.forEach((f,i)=>setTimeout(()=>playUke(f,1.3), i*40)); }
+function playVoice(freq, dur){
+  ensureAudio(); dur=dur||1.1; const t0=AC.currentTime;
+  const src=AC.createOscillator(); src.type="sawtooth"; src.frequency.value=freq;
+  const lfo=AC.createOscillator(); lfo.type="sine"; lfo.frequency.value=5.5;
+  const lg=AC.createGain(); lg.gain.value=freq*0.007; lfo.connect(lg); lg.connect(src.frequency);
+  const f1=AC.createBiquadFilter(); f1.type="bandpass"; f1.frequency.value=730; f1.Q.value=8;
+  const f2=AC.createBiquadFilter(); f2.type="bandpass"; f2.frequency.value=1090; f2.Q.value=10;
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(0.5,t0+0.06);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  src.connect(f1); src.connect(f2); f1.connect(g); f2.connect(g); g.connect(AC.destination);
+  src.start(t0); lfo.start(t0); src.stop(t0+dur); lfo.stop(t0+dur);
+}
+function playMelody(freq){
+  if(STATE.instrument==="synth") return playSynth(freq, CURRENT_VOICE);
+  return playPiano(freq);
+}
+
+/* ---- data ---- */
+const UKE_CHORDS={ // string order g,C,E,A ; shape=[fret,finger]
+  c:{name:()=>t("chord_c"),  shape:[[0,0],[0,0],[0,0],[3,3]], freqs:[392.00,261.63,329.63,523.25]},
+  am:{name:()=>t("chord_am"), shape:[[2,2],[0,0],[0,0],[0,0]], freqs:[440.00,261.63,329.63,440.00]},
+  f:{name:()=>t("chord_f"),  shape:[[2,2],[0,0],[1,1],[0,0]], freqs:[440.00,261.63,349.23,440.00]}
+};
+function chordSet(){
+  if(STATE.instrument==="uku") return {list:["c","am","f"], map:UKE_CHORDS};
+  return {list:["em","g","c"], map:CHORDS};
+}
+const VOICE_LADDER=[
+  {s:"Do",n:"C4"},{s:"Re",n:"D4"},{s:"Mi",n:"E4"},{s:"Fa",n:"F4"},
+  {s:"Sol",n:"G4"},{s:"La",n:"A4"},{s:"Ti",n:"B4"},{s:"Do",n:"C5"}
+];
+
+/* ---- builders ---- */
+function buildUke(withStrum){
+  const rows=[{lbl:"A",f:440.00},{lbl:"E",f:329.63},{lbl:"C",f:261.63},{lbl:"g",f:392.00}]; // top->bottom
+  const box=el("div",{class:"guitar"});
+  const refs=[];
+  rows.forEach(s=>{
+    const row=el("div",{class:"gstring"},[el("div",{class:"lbl",text:s.lbl}),el("div",{class:"line"})]);
+    row.addEventListener("pointerdown",()=>{ playUke(s.f); row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck"); });
+    box.appendChild(row); refs.push(row);
+  });
+  if(withStrum){
+    box.appendChild(el("div",{class:"center",style:"margin-top:12px"},[
+      el("button",{class:"bigbtn warn",text:"🪕 "+t("strum"),onclick:()=>{
+        [3,2,1,0].forEach((idx,i)=>setTimeout(()=>{ playUke(rows[idx].f); const r=refs[idx]; r.classList.remove("pluck"); void r.offsetWidth; r.classList.add("pluck"); }, i*55));
+      }})
+    ]));
+  }
+  return box;
+}
+function buildSynthFreePlay(){
+  const wrap=el("div",{});
+  wrap.appendChild(el("div",{class:"screen-sub",text:t("act_sound_pick")}));
+  const picker=el("div",{class:"row",style:"margin-bottom:8px"});
+  const btns={};
+  [["piano",t("sound_piano")],["bells",t("sound_bells")],["space",t("sound_space")],["robot",t("sound_robot")]].forEach(([v,label])=>{
+    const b=el("button",{class:"pill",text:label});
+    if(v===CURRENT_VOICE) b.style.background="var(--yellow)";
+    b.addEventListener("click",()=>{ CURRENT_VOICE=v; for(const k in btns) btns[k].style.background=""; b.style.background="var(--yellow)"; playSynth(noteFreq("C4"),v); });
+    btns[v]=b; picker.appendChild(b);
+  });
+  wrap.appendChild(picker);
+  wrap.appendChild(buildKeyboard((f)=>playSynth(f, CURRENT_VOICE)));
+  return wrap;
+}
+function buildVoiceLadder(){
+  const wrap=el("div",{class:"center"});
+  const ladder=el("div",{style:"display:flex;flex-direction:column-reverse;gap:8px;max-width:340px;margin:0 auto;"});
+  VOICE_LADDER.forEach((step,i)=>{
+    const b=el("button",{class:"bigbtn",style:"width:100%;background:hsl("+(i*32)+",72%,55%)",text:step.s});
+    b.addEventListener("pointerdown",()=>{ playVoice(noteFreq(step.n),0.7); b.style.filter="brightness(1.25)"; setTimeout(()=>b.style.filter="",150); });
+    ladder.appendChild(b);
+  });
+  wrap.appendChild(ladder);
+  wrap.appendChild(el("div",{class:"row",style:"margin-top:12px"},[
+    el("button",{class:"bigbtn alt",text:t("warmup_play"),onclick:()=>{
+      VOICE_LADDER.forEach((step,i)=>setTimeout(()=>playVoice(noteFreq(step.n),0.45), i*450));
+    }})
+  ]));
+  wrap.appendChild(el("div",{class:"screen-sub",style:"color:var(--muted);margin-top:10px",text:t("voice_privacy")}));
+  return wrap;
+}
+
+/* ---- screens ---- */
+function ukeSongScreen(){
+  clear();
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("uke_song_intro")}));
+  const seq=["c","am","f","c"];
+  let pos=0;
+  const status=el("div",{class:"scorebar"});
+  const diagram=el("div",{class:"center"});
+  const nextLbl=el("div",{class:"screen-sub"});
+  const renderStep=()=>{
+    diagram.innerHTML="";
+    if(pos>=seq.length){ status.textContent=t("uke_song_done"); nextLbl.textContent=""; confetti(); awardStar("uku_strumsong"); return; }
+    const ch=UKE_CHORDS[seq[pos]];
+    diagram.appendChild(buildFretDiagram(ch));
+    diagram.appendChild(el("div",{class:"screen-sub",text:ch.name()}));
+    status.textContent=(pos+1)+" / "+seq.length;
+    nextLbl.textContent = (pos+1<seq.length) ? t("uke_next_chord",{c:UKE_CHORDS[seq[pos+1]].name()}) : "";
+  };
+  renderStep();
+  app().appendChild(status);
+  app().appendChild(diagram);
+  app().appendChild(nextLbl);
+  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
+    el("button",{class:"bigbtn warn",text:"🪕 "+t("strum"),onclick:()=>{
+      if(pos>=seq.length){ pos=0; renderStep(); return; }
+      const ch=UKE_CHORDS[seq[pos]]; playUkeChord(ch.freqs.filter(f=>f>0)); pos++; renderStep();
+    }})
+  ]));
+}
+function actWarmup(){
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎶 "+t("act_warmup")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("warmup_intro")}));
+  app().appendChild(buildVoiceLadder());
+  awardStar("voice_warmup");
+}
+let copyRound=1, copySeq=[];
+function actCopy(){ copyRound=1; copyNewTune(); }
+function copyNewTune(){
+  clear();
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🔁 "+t("act_copy")}));
+  app().appendChild(el("div",{class:"scorebar",text:t("copy_round",{n:copyRound})}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("copy_intro")}));
+  const len=Math.min(2+copyRound,6);
+  copySeq=[];
+  for(let i=0;i<len;i++) copySeq.push(VOICE_LADDER[Math.floor(Math.random()*VOICE_LADDER.length)]);
+  const disp=el("div",{class:"stars",style:"font-size:26px;min-height:34px"});
+  const renderDisp=(hi)=>{ disp.innerHTML=""; copySeq.forEach((st,i)=>{ disp.appendChild(el("span",{style:"margin:0 6px;"+(i===hi?"color:var(--pink)":""),text:st.s})); }); };
+  renderDisp(-1);
+  const playTune=()=>{ copySeq.forEach((st,i)=>setTimeout(()=>{ playVoice(noteFreq(st.n),0.5); renderDisp(i); if(i===copySeq.length-1) setTimeout(()=>renderDisp(-1),400); }, i*550)); };
+  app().appendChild(disp);
+  app().appendChild(el("div",{class:"row"},[ el("button",{class:"bigbtn alt",text:t("copy_listen"),onclick:playTune}) ]));
+  app().appendChild(el("div",{class:"screen-sub",style:"margin-top:14px",text:t("copy_youtry")}));
+  app().appendChild(el("div",{class:"row"},[
+    el("button",{class:"bigbtn",text:t("copy_did"),onclick:()=>{ confetti(); awardStar("voice_copy"); copyRound++; setTimeout(copyNewTune,900); }})
+  ]));
+  app().appendChild(el("div",{class:"screen-sub",style:"color:var(--muted);margin-top:10px",text:t("voice_privacy")}));
+  setTimeout(playTune,500);
+}
+
+/* ---- videos for the new instruments (adult-supervised YouTube search links) ---- */
+Object.assign(VIDEOS,{
+  uku:[
+    {t:"How to hold and strum a ukulele", u:"https://www.youtube.com/results?search_query=how+to+strum+ukulele+for+kids", em:"🪕"},
+    {t:"Your first easy ukulele chords (C, Am, F)", u:"https://www.youtube.com/results?search_query=first+easy+ukulele+chords+C+Am+F+beginner", em:"✋"},
+    {t:"Fun kids ukulele sing-along", u:"https://www.youtube.com/results?search_query=easy+ukulele+sing+along+for+kids", em:"🎶"}
+  ],
+  synth:[
+    {t:"What a synthesizer does", u:"https://www.youtube.com/results?search_query=what+is+a+synthesizer+for+kids", em:"🎛️"},
+    {t:"Cool synth sounds explained", u:"https://www.youtube.com/results?search_query=synthesizer+sounds+explained+simple", em:"✨"},
+    {t:"Kids making music on a keyboard", u:"https://www.youtube.com/results?search_query=kids+playing+keyboard+music", em:"🎹"}
+  ],
+  voice:[
+    {t:"Fun vocal warm-ups for kids", u:"https://www.youtube.com/results?search_query=fun+vocal+warm+ups+for+kids", em:"🎤"},
+    {t:"Do-Re-Mi singing for kids", u:"https://www.youtube.com/results?search_query=do+re+mi+singing+for+kids", em:"🎶"},
+    {t:"High and low notes for kids", u:"https://www.youtube.com/results?search_query=high+and+low+notes+singing+for+kids", em:"⬆️"}
+  ]
+});
+</script>
+
+<script>
+"use strict";
+/* ============================================================
+   PHASE 2 — GROWN-UPS TRACK
+   Grown-ups is modelled as a 4th age band ("ad") so it reuses the
+   whole band -> level -> instrument -> hub flow and every activity,
+   with adult reading level. Adds: "Which suits you?" recommender,
+   "Grown-up Basics" and "Buy Your First One" per instrument, plus
+   adult-oriented video links. Shares global scope; all strings i18n.
+   ============================================================ */
+
+Object.assign(I18N.en, {
+  band_adult_age:"any age — never too late",
+  videos_sub_ad:"Opens in a new tab on YouTube.",
+  act_match:"Which suits you?", act_match_desc:"Find your instrument",
+  act_basics:"Grown-up Basics", act_basics_desc:"Fundamentals, at an adult pace",
+  act_buying:"Buy Your First One", act_buying_desc:"What to look for",
+  // never-too-late Meet framing per instrument
+  meet_piano_ad:"It's never too late to start piano. The layout is wonderfully logical — low notes on the left, high on the right — which makes it one of the clearest instruments to understand as an adult. You'll read music and train both hands, and progress is satisfyingly visible.",
+  meet_guitar_ad:"Guitar is a favourite adult starter: portable, social and satisfying quickly. Six strings, a few chord shapes, and you're playing songs. Your fingertips toughen up within a couple of weeks.",
+  meet_drums_ad:"Drumming is pure rhythm and a brilliant stress-reliever. You'll feel a groove within your first session. Electronic kits let you practise silently on headphones if space or noise is a concern.",
+  meet_uku_ad:"The ukulele is the gentlest place to begin. Four soft strings, a handful of easy chords, and songs on day one. It's cheap, tiny and genuinely hard to put down.",
+  meet_synth_ad:"A keyboard or synth gives you piano fundamentals plus a whole world of sounds, and headphones mean you can practise at any hour without disturbing anyone.",
+  meet_voice_ad:"Your voice is the instrument you already own. With gentle warm-ups and a little pitch practice, adults improve quickly. Nothing here is recorded.",
+  // which-suits-you guide
+  match_intro:"Answer three quick questions and I'll suggest a starting instrument. There's no wrong choice — you can explore any of them.",
+  match_q1:"What pulls you in most?",
+  match_q1_a:"Melody & harmony", match_q1_b:"Rhythm & groove", match_q1_c:"Songs to sing along to", match_q1_d:"Using my own voice",
+  match_q2:"Where will you mostly play?",
+  match_q2_a:"At home, with space", match_q2_b:"On the go / small space", match_q2_c:"Anywhere, hands-free", match_q2_d:"On headphones, any time",
+  match_q3:"Your budget to start?",
+  match_q3_a:"Keep it low", match_q3_b:"Middle of the road", match_q3_c:"Room to invest",
+  match_result:"A great fit for you: {inst}",
+  match_reason_piano:"Piano lays music out clearly and builds strong all-round fundamentals.",
+  match_reason_guitar:"Guitar is portable and social — perfect for songs and singalongs.",
+  match_reason_drums:"Drums are all about rhythm and groove, and a brilliant energy outlet.",
+  match_reason_uku:"The ukulele is the easiest, cheapest and most portable place to start.",
+  match_reason_synth:"A keyboard gives you piano skills plus endless sounds, quietly on headphones.",
+  match_reason_voice:"Singing needs no gear — just your voice and a little warm-up.",
+  match_go:"Explore {inst} →", match_again:"↺ Try again", match_pick:"Or pick any instrument yourself",
+  // adult-paced fundamentals
+  basics_intro:"Grown-up basics for {inst}. Small, steady practice beats rare marathons — ten to fifteen minutes most days goes a long way.",
+  basics_try:"Have a go →",
+  basics_piano:"Sit tall with relaxed shoulders and curved fingers. Find Middle C and learn the white-key note names around it. Start with the C major scale (one hand, then both) and one easy piece you like. Keep a steady beat — a metronome or app helps. Ten to fifteen focused minutes most days will move you faster than the occasional long session.",
+  basics_guitar:"Hold the guitar relaxed with your thumb behind the neck, and tune up with a free clip-on or app tuner. Your first goal is three chords — E minor, G and C — and switching cleanly between them. Press just behind the fret, not on top of it. Fingertips will be sore for a week or two, then calluses form and it gets easy.",
+  basics_drums:"Hold the sticks loosely and let them rebound rather than forcing them down. Learn the basic beat: kick on counts 1 and 3, snare on 2 and 4, steady hi-hats in between. Play slowly with a metronome and speed up only when it's clean. A rubber practice pad is a great quiet substitute for a full kit.",
+  basics_uku:"Tune the four strings g-C-E-A and you're ready. The chords C, Am and F unlock a huge number of songs, and a relaxed down-up strum is all the right hand needs at first. It's the friendliest string instrument to begin on — light, forgiving and quick to reward you.",
+  basics_synth:"A keyboard gives you piano fundamentals plus a world of sounds. Learn the note layout and a simple scale, then explore the voices. Touch-sensitive keys respond to how hard you play; weighted keys feel closest to a real piano. Headphones let you practise at any hour.",
+  basics_voice:"Warm up gently and never push through strain. Breathe low, from the belly, and start by matching single notes from a keyboard or app before trying whole phrases. Short daily practice, water and rest keep your voice healthy. Recording yourself on your own device is the fastest way to hear progress.",
+  // buying advice
+  buying_intro:"Buying your first {inst}. Prices vary a lot by country and change over time, so treat any specifics as rough and check current local listings.",
+  buying_caveat:"General guidance only — not financial advice. Prices and models change, so compare current local options before buying.",
+  buying_piano:"A digital piano with 88 weighted, hammer-action keys is the best value to begin — it feels like a real piano, never needs tuning, and works with headphones. Acoustic uprights sound wonderful but need space, regular tuning and a bigger budget. Whatever you try, prioritise weighted keys over a light synth-action keyboard.",
+  buying_guitar:"A comfortable beginner acoustic is ideal; nylon-string (classical) guitars are gentler on new fingers, steel-string a little brighter and louder. The most important thing is a proper setup so the strings sit low and easy to press — a quick shop setup transforms a cheap guitar. Add a clip-on tuner.",
+  buying_drums:"An electronic kit is the practical choice for most homes: quiet through headphones and it fits a corner. Acoustic kits feel and sound great but are loud and need space. If you're unsure, start with a practice pad, a pair of sticks and a metronome — that alone builds real technique.",
+  buying_uku:"A soprano or concert ukulele from a known beginner brand is a superb, inexpensive first instrument. Look for one that holds its tuning and has smooth strings; avoid the very cheapest toy versions that won't stay in tune. Geared tuners are a nice bonus.",
+  buying_synth:"Sixty-one keys are plenty to start; choose eighty-eight weighted keys if you want a true piano feel. Make sure the keys are touch-sensitive so volume responds to your playing. Check that it has a headphone jack and, ideally, USB so you can connect to music apps later.",
+  buying_voice:"Your voice is free — that's the joy of it. The only worthwhile purchases are a tuner or piano app to check your pitch, and perhaps a few lessons to learn healthy technique. A quiet room and regular practice matter far more than any gear."
+});
+
+/* ---- "Which instrument suits you?" recommender ---- */
+const MATCH_Q=[
+  {q:"match_q1", opts:[
+    {k:"match_q1_a", s:{piano:2,synth:1}},
+    {k:"match_q1_b", s:{drums:2}},
+    {k:"match_q1_c", s:{guitar:2,uku:1}},
+    {k:"match_q1_d", s:{voice:2}} ]},
+  {q:"match_q2", opts:[
+    {k:"match_q2_a", s:{piano:1,drums:1}},
+    {k:"match_q2_b", s:{uku:2,guitar:1}},
+    {k:"match_q2_c", s:{voice:2}},
+    {k:"match_q2_d", s:{synth:2}} ]},
+  {q:"match_q3", opts:[
+    {k:"match_q3_a", s:{uku:2,voice:2}},
+    {k:"match_q3_b", s:{guitar:1,synth:1}},
+    {k:"match_q3_c", s:{piano:1,drums:1}} ]}
+];
+let matchScores={}, matchStep=0;
+function actMatch(){ matchScores={piano:0,guitar:0,drums:0,uku:0,synth:0,voice:0}; matchStep=0; matchRender(); }
+function matchRender(){
+  clear(); app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🧭 "+t("act_match")}));
+  if(matchStep>=MATCH_Q.length) return matchResult();
+  if(matchStep===0) app().appendChild(el("div",{class:"screen-sub",text:t("match_intro")}));
+  app().appendChild(el("div",{class:"scorebar",text:(matchStep+1)+" / "+MATCH_Q.length}));
+  const Q=MATCH_Q[matchStep];
+  app().appendChild(el("div",{class:"screen-sub",text:t(Q.q)}));
+  const grid=el("div",{class:"grid"});
+  Q.opts.forEach(o=>{
+    grid.appendChild(el("div",{class:"choice",text:t(o.k),onclick:()=>{
+      for(const k in o.s) matchScores[k]+=o.s[k];
+      matchStep++; matchRender();
+    }}));
+  });
+  app().appendChild(grid);
+}
+function matchResult(){
+  clear(); app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🧭 "+t("act_match")}));
+  const order=["uku","guitar","piano","synth","drums","voice"];
+  let best=order[0];
+  order.forEach(k=>{ if(matchScores[k]>matchScores[best]) best=k; });
+  const nm=t("inst_"+best);
+  confetti();
+  app().appendChild(el("div",{class:"panel center"},[
+    el("div",{class:"emoji",text:INST_EMOJI[best],style:"font-size:64px"}),
+    el("h2",{text:t("match_result",{inst:nm})}),
+    el("p",{text:t("match_reason_"+best)}),
+    el("button",{class:"bigbtn",text:t("match_go",{inst:nm}),onclick:()=>go("hub",{instrument:best})}),
+    el("div",{style:"height:6px"}),
+    el("button",{class:"bigbtn alt",text:t("match_again"),onclick:()=>actMatch()})
+  ]));
+  app().appendChild(el("div",{class:"center"},[
+    el("button",{class:"pill",text:t("match_pick"),onclick:()=>go("instrument")})
+  ]));
+}
+
+/* ---- adult fundamentals + buying advice ---- */
+function actBasics(){
+  app().appendChild(topbar(true));
+  const nm=instName();
+  app().appendChild(el("div",{class:"screen-title",text:"📘 "+t("act_basics")+" — "+nm}));
+  app().appendChild(el("div",{class:"panel"},[
+    el("p",{text:t("basics_intro",{inst:nm}),style:"color:var(--ink);font-weight:700"}),
+    el("p",{text:t("basics_"+STATE.instrument)})
+  ]));
+  app().appendChild(el("div",{class:"center"},[
+    el("button",{class:"bigbtn",text:t("basics_try"),onclick:()=>go("play")})
+  ]));
+  awardStar("ad_"+STATE.instrument+"_basics");
+}
+function actBuying(){
+  app().appendChild(topbar(true));
+  const nm=instName();
+  app().appendChild(el("div",{class:"screen-title",text:"🛒 "+t("act_buying")+" — "+nm}));
+  app().appendChild(el("div",{class:"panel"},[
+    el("p",{text:t("buying_intro",{inst:nm}),style:"color:var(--ink);font-weight:700"}),
+    el("p",{text:t("buying_"+STATE.instrument)}),
+    el("p",{text:t("buying_caveat"),style:"font-size:14px;color:var(--muted)"})
+  ]));
+  awardStar("ad_"+STATE.instrument+"_buying");
+}
+
+/* ---- adult video links ---- */
+const VIDEOS_ADULT={
+  piano:[
+    {t:"Adult beginner: where to start on piano", u:"https://www.youtube.com/results?search_query=adult+beginner+piano+where+to+start", em:"🎹"},
+    {t:"Learn piano as an adult (a realistic plan)", u:"https://www.youtube.com/results?search_query=learn+piano+as+an+adult+practice+plan", em:"🗓️"}
+  ],
+  guitar:[
+    {t:"First guitar lesson for adults", u:"https://www.youtube.com/results?search_query=first+guitar+lesson+for+adult+beginners", em:"🎸"},
+    {t:"Adult beginner: Em, G, C and changes", u:"https://www.youtube.com/results?search_query=beginner+guitar+Em+G+C+chord+changes", em:"✋"}
+  ],
+  drums:[
+    {t:"Adult beginner drums: the first beat", u:"https://www.youtube.com/results?search_query=adult+beginner+drums+first+rock+beat", em:"🥁"},
+    {t:"Practising drums quietly at home", u:"https://www.youtube.com/results?search_query=practice+drums+quietly+electronic+kit+apartment", em:"🎧"}
+  ],
+  uku:[
+    {t:"Adult beginner ukulele — first lesson", u:"https://www.youtube.com/results?search_query=adult+beginner+ukulele+first+lesson", em:"🪕"},
+    {t:"C, Am, F and your first songs", u:"https://www.youtube.com/results?search_query=ukulele+C+Am+F+easy+songs+beginner", em:"🎶"}
+  ],
+  synth:[
+    {t:"Synth basics for total beginners", u:"https://www.youtube.com/results?search_query=synthesizer+basics+for+beginners", em:"🎛️"},
+    {t:"Keyboard vs digital piano: which to buy", u:"https://www.youtube.com/results?search_query=keyboard+vs+digital+piano+which+to+buy+beginner", em:"⚖️"}
+  ],
+  voice:[
+    {t:"Vocal warm-ups for adult beginners", u:"https://www.youtube.com/results?search_query=vocal+warm+ups+for+adult+beginners", em:"🎤"},
+    {t:"Learn to sing in tune (adults)", u:"https://www.youtube.com/results?search_query=how+to+sing+in+tune+adult+beginner", em:"🎯"}
+  ]
+};
+</script>
+</body>
+</html>
