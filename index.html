@@ -196,6 +196,12 @@ const I18N = {
     // songs
     song_pick:"Pick a song", song_twinkle:"Twinkle Twinkle", song_mary:"Mary Had a Little Lamb",
     song_ode:"Ode to Joy", song_birthday:"Happy Birthday",
+    song_hotcross:"Hot Cross Buns", song_row:"Row Your Boat", song_frere:"Are You Sleeping",
+    song_london:"London Bridge", song_oldmac:"Old MacDonald", song_babyshark:"Baby Shark",
+    song_jingle:"Jingle Bells", song_furelise:"Für Elise", song_saints:"When the Saints",
+    song_rain:"Rain Rain Go Away", song_itsy:"Itsy Bitsy Spider", song_happyknow:"If You're Happy",
+    song_thisoldman:"This Old Man", song_popweasel:"Pop! Goes the Weasel",
+    song_headshoulders:"Head & Shoulders", song_wheels:"Wheels on the Bus",
     song_watch:"Watch it play", song_yourturn:"Your turn, follow the glowing keys!",
     song_welldone:"You played it! 🌟",
     // chords
@@ -739,16 +745,32 @@ function buildDrumKit(){
 
 /* ---------- SONGS (piano + guitar-friendly melodies) ---------- */
 const SONGS={
-  twinkle:{name:()=>t("song_twinkle"), notes:["C4","C4","G4","G4","A4","A4","G4","F4","F4","E4","E4","D4","D4","C4"]},
+  // All melodies are public-domain / traditional nursery, folk or classical tunes,
+  // transcribed within the song keyboard's C4-C6 range (white + black keys).
+  hotcross:{name:()=>t("song_hotcross"), notes:["E4","D4","C4","E4","D4","C4","C4","C4","C4","C4","D4","D4","D4","D4","E4","D4","C4"]},
   mary:{name:()=>t("song_mary"), notes:["E4","D4","C4","D4","E4","E4","E4","D4","D4","D4","E4","G4","G4"]},
+  twinkle:{name:()=>t("song_twinkle"), notes:["C4","C4","G4","G4","A4","A4","G4","F4","F4","E4","E4","D4","D4","C4"]},
+  oldmac:{name:()=>t("song_oldmac"), notes:["C4","C4","C4","G4","A4","A4","G4","E4","E4","D4","D4","C4","C4","C4","C4","G4","A4","A4","G4","E4","E4","D4","D4","C4"]},
+  babyshark:{name:()=>t("song_babyshark"), notes:["C4","D4","F4","F4","F4","F4","F4","F4","C4","D4","F4","F4","F4","F4","F4","F4","C4","D4","F4","F4","F4","F4","F4","F4","C4","D4","F4"]},
+  rain:{name:()=>t("song_rain"), notes:["G4","E4","G4","E4","A4","A4","G4","E4","G4","G4","E4"]},
+  row:{name:()=>t("song_row"), notes:["C4","C4","C4","D4","E4","E4","D4","E4","F4","G4","C5","C5","C5","G4","G4","G4","E4","E4","E4","C4","C4","C4","G4","F4","E4","D4","C4"]},
+  london:{name:()=>t("song_london"), notes:["G4","A4","G4","F4","E4","F4","G4","D4","E4","F4","E4","F4","G4","G4","A4","G4","F4","E4","F4","G4","D4","G4","E4","C4"]},
+  frere:{name:()=>t("song_frere"), notes:["C4","D4","E4","C4","C4","D4","E4","C4","E4","F4","G4","E4","F4","G4","G4","A4","G4","F4","E4","C4","G4","A4","G4","F4","E4","C4","C4","G4","C4","C4","G4","C4"]},
+  jingle:{name:()=>t("song_jingle"), notes:["E4","E4","E4","E4","E4","E4","E4","G4","C4","D4","E4","F4","F4","F4","F4","F4","E4","E4","E4","E4","D4","D4","E4","D4","G4"]},
+  wheels:{name:()=>t("song_wheels"), notes:["C4","F4","F4","F4","A4","C5","A4","F4","G4","E4","C4","G4","E4","C4","C4","F4","F4","F4","A4","C5","A4","F4","G4","G4","D4","F4","E4","C4"]},
   ode:{name:()=>t("song_ode"), notes:["E4","E4","F4","G4","G4","F4","E4","D4","C4","C4","D4","E4","E4","D4","D4"]},
+  saints:{name:()=>t("song_saints"), notes:["C4","E4","F4","G4","C4","E4","F4","G4","C4","E4","F4","G4","E4","C4","E4","D4","E4","E4","D4","C4","E4","G4","G4","F4","E4","F4","G4","E4","C4","D4","C4"]},
+  happyknow:{name:()=>t("song_happyknow"), notes:["C4","F4","F4","F4","F4","F4","A4","G4","F4","C4","F4","F4","F4","F4","F4","A4","G4","F4"]},
+  thisoldman:{name:()=>t("song_thisoldman"), notes:["G4","E4","G4","G4","E4","G4","A4","G4","F4","E4","D4","E4","F4","G4","C4","C4","D4","E4","F4","G4","G4","D4","E4","F4","D4","E4","C4"]},
+  headshoulders:{name:()=>t("song_headshoulders"), notes:["G4","E4","C4","E4","G4","G4","E4","C4","E4","G4","A4","A4","B4","B4","C5","G4","E4","C4"]},
+  popweasel:{name:()=>t("song_popweasel"), notes:["C4","C4","D4","D4","E4","G4","E4","C4","C4","C4","D4","D4","E4","C4","C4","C4","D4","D4","E4","G4","E4","C4","A4","D4","F4","A4","G4","E4","C4"]},
+  itsy:{name:()=>t("song_itsy"), notes:["G4","C5","C5","C5","D5","E5","E5","E5","D5","C5","D5","E5","C5","E5","E5","F5","G5","G5","F5","E5","F5","G5","E5","C5","C5","D5","E5","E5","D5","C5","D5","E5","C5"]},
+  furelise:{name:()=>t("song_furelise"), notes:["E5","D#5","E5","D#5","E5","B4","D5","C5","A4","C4","E4","A4","B4","E4","G#4","B4","C5"]},
   birthday:{name:()=>t("song_birthday"), notes:["C4","C4","D4","C4","F4","E4","C4","C4","D4","C4","G4","F4","C4","C4","C5","A4","F4","E4","D4","A#4","A#4","A4","F4","G4","F4"]}
 };
-function songListForBand(){
-  if(STATE.band==="b1") return ["twinkle","mary"];
-  if(STATE.band==="b2") return ["twinkle","mary","ode"];
-  return ["twinkle","ode","birthday"];
-}
+// Ordered easiest -> hardest. The whole library is offered to every age band and grown-ups.
+const SONG_ORDER=["hotcross","mary","twinkle","oldmac","babyshark","rain","row","london","frere","jingle","wheels","ode","saints","happyknow","thisoldman","headshoulders","popweasel","itsy","furelise","birthday"];
+function songListForBand(){ return SONG_ORDER.slice(); }
 function actSongs(){
   if(STATE.instrument==="uku") return ukeSongScreen();
   app().appendChild(topbar(true));
