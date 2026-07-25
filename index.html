@@ -193,6 +193,7 @@ const I18N = {
     // free play
     play_piano_hint:"Tap the keys!", play_guitar_hint:"Tap a string, or hit STRUM!",
     play_drums_hint:"Bang the pads!", strum:"STRUM ALL",
+    gt_pick:"Pick a guitar sound", gvoice_acoustic:"Acoustic", gvoice_nylon:"Classical", gvoice_electric:"Electric", gvoice_rock:"Rock",
     // songs
     song_pick:"Pick a song", song_twinkle:"Twinkle Twinkle", song_mary:"Mary Had a Little Lamb",
     song_ode:"Ode to Joy", song_birthday:"Happy Birthday",
@@ -331,33 +332,79 @@ function master(gainVal){
   const g=AC.createGain(); g.gain.value=gainVal; g.connect(AC.destination); return g;
 }
 function playPiano(freq, dur){
-  ensureAudio(); dur=dur||1.2;
+  ensureAudio(); dur=dur||1.8;
   const t0=AC.currentTime;
-  const g=AC.createGain();
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(0.5,t0+0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  const o1=AC.createOscillator(); o1.type="triangle"; o1.frequency.value=freq;
-  const o2=AC.createOscillator(); o2.type="sine"; o2.frequency.value=freq*2;
-  const g2=AC.createGain(); g2.gain.value=0.3; o2.connect(g2);
-  o1.connect(g); g2.connect(g); g.connect(AC.destination);
-  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
+  const master=AC.createGain(); master.gain.value=0.85; master.connect(AC.destination);
+  const B=0.0008; // slight inharmonicity -> stringier, more piano-like partials
+  [[1,1.0,dur],[2,0.5,dur*0.7],[3,0.26,dur*0.5],[4,0.13,dur*0.36],[6,0.06,dur*0.26]].forEach(function(p){
+    const n=p[0], amp=p[1], d=p[2];
+    const o=AC.createOscillator(); o.type="sine"; o.frequency.value=freq*n*(1+B*n*n);
+    const g=AC.createGain();
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(amp*0.45,t0+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+d);
+    o.connect(g); g.connect(master); o.start(t0); o.stop(t0+d);
+  });
+  // hammer transient (short filtered noise) for a natural attack
+  const nz=AC.createBufferSource(); nz.buffer=noiseBuffer();
+  const nf=AC.createBiquadFilter(); nf.type="bandpass"; nf.frequency.value=Math.min(freq*3,6000); nf.Q.value=0.8;
+  const ng=AC.createGain(); ng.gain.setValueAtTime(0.22,t0); ng.gain.exponentialRampToValueAtTime(0.0001,t0+0.05);
+  nz.connect(nf); nf.connect(ng); ng.connect(master); nz.start(t0); nz.stop(t0+0.06);
 }
-function playGuitar(freq, dur){
-  ensureAudio(); dur=dur||1.6;
+/* ---- Plucked-string engine (Karplus-Strong) for realistic guitar & ukulele ----
+   A short noise burst is fed into a tuned, damped feedback line, exactly how a
+   real string behaves. Rendered once per note into an AudioBuffer and cached. ---- */
+const GT_CACHE={};
+let CURRENT_GUITAR="acoustic";
+const GUITAR_VOICES={
+  acoustic:{decay:0.9958, damp:0.50, lp:3800, hp:90,  gain:0.62, drive:0,    dur:2.4},
+  nylon:   {decay:0.9948, damp:0.64, lp:2600, hp:80,  gain:0.66, drive:0,    dur:2.1, softExcite:true},
+  electric:{decay:0.9976, damp:0.40, lp:5200, hp:120, gain:0.5,  drive:0.10, dur:2.8},
+  rock:    {decay:0.9972, damp:0.44, lp:4200, hp:130, gain:0.42, drive:0.6,  dur:2.4}
+};
+const UKE_VOICE={decay:0.9915, damp:0.56, lp:4600, hp:170, gain:0.5, drive:0, dur:1.5};
+function ksPluck(freq, v){
+  const sr=AC.sampleRate, dur=v.dur||2.2;
+  const len=Math.floor(sr*dur), N=Math.max(2,Math.round(sr/freq));
+  const buf=AC.createBuffer(1,len,sr), out=buf.getChannelData(0), dl=new Float32Array(N);
+  for(let i=0;i<N;i++) dl[i]=Math.random()*2-1;
+  if(v.softExcite){ let p=0; for(let i=0;i<N;i++){ p=0.55*p+0.45*dl[i]; dl[i]=p; } } // mellower nylon attack
+  const decay=v.decay, damp=v.damp; let idx=0, prev=0;
+  for(let i=0;i<len;i++){ const cur=dl[idx]; out[i]=cur; const y=decay*((1-damp)*cur+damp*prev); prev=cur; dl[idx]=y; idx++; if(idx>=N) idx=0; }
+  return buf;
+}
+function driveCurve(amount){ const n=1024,c=new Float32Array(n),k=amount*80; for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=(1+k)*x/(1+k*Math.abs(x)); } return c; }
+function playPluck(freq, v, prefix){
+  ensureAudio();
+  const key=prefix+"_"+Math.round(freq*10);
+  let buf=GT_CACHE[key]; if(!buf){ buf=ksPluck(freq,v); GT_CACHE[key]=buf; }
   const t0=AC.currentTime;
-  const g=AC.createGain();
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(0.55,t0+0.006);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  const o1=AC.createOscillator(); o1.type="sawtooth"; o1.frequency.value=freq;
-  const o2=AC.createOscillator(); o2.type="triangle"; o2.frequency.value=freq;
-  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(3200,t0);
-  lp.frequency.exponentialRampToValueAtTime(700,t0+dur);
-  o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(AC.destination);
-  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
+  const src=AC.createBufferSource(); src.buffer=buf;
+  const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=v.hp||90;
+  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=v.lp||3600;
+  const g=AC.createGain(); g.gain.value=v.gain||0.55;
+  src.connect(hp); hp.connect(lp); let end=lp;
+  if(v.drive>0){ const ws=AC.createWaveShaper(); ws.curve=driveCurve(v.drive); ws.oversample="2x"; lp.connect(ws); end=ws; }
+  end.connect(g); g.connect(AC.destination);
+  src.start(t0); src.stop(t0+(v.dur||2.2));
 }
-function playChord(freqs){ freqs.forEach((f,i)=> setTimeout(()=>playGuitar(f,1.8), i*45)); }
+function playGuitar(freq, dur){ playPluck(freq, GUITAR_VOICES[CURRENT_GUITAR]||GUITAR_VOICES.acoustic, "g"+CURRENT_GUITAR); }
+function playChord(freqs){ freqs.forEach((f,i)=> setTimeout(()=>playGuitar(f), i*48)); }
+function buildGuitarFreePlay(){
+  const wrap=el("div",{});
+  wrap.appendChild(el("div",{class:"screen-sub",text:t("gt_pick")}));
+  const picker=el("div",{class:"row",style:"margin-bottom:10px"});
+  const btns={};
+  [["acoustic",t("gvoice_acoustic")],["nylon",t("gvoice_nylon")],["electric",t("gvoice_electric")],["rock",t("gvoice_rock")]].forEach(function(pair){
+    const v=pair[0], b=el("button",{class:"pill",text:pair[1]});
+    if(v===CURRENT_GUITAR) b.style.background="var(--yellow)";
+    b.addEventListener("click",function(){ CURRENT_GUITAR=v; for(const k in btns) btns[k].style.background=""; b.style.background="var(--yellow)"; playGuitar(196); });
+    btns[v]=b; picker.appendChild(b);
+  });
+  wrap.appendChild(picker);
+  wrap.appendChild(buildGuitar(true));
+  return wrap;
+}
 
 let NOISE=null;
 function noiseBuffer(){
@@ -641,7 +688,7 @@ function actFreePlay(){
     app().appendChild(buildKeyboard());
   } else if(STATE.instrument==="guitar"){
     app().appendChild(el("div",{class:"screen-sub",text:t("play_guitar_hint")}));
-    app().appendChild(buildGuitar(true));
+    app().appendChild(buildGuitarFreePlay());
   } else if(STATE.instrument==="drums"){
     app().appendChild(el("div",{class:"screen-sub",text:t("play_drums_hint")}));
     app().appendChild(buildDrumKit());
@@ -1364,20 +1411,7 @@ function playSynth(freq, voice, dur){
   g.connect(AC.destination);
   oscs.forEach(o=>{ o.start(t0); o.stop(t0+dur); });
 }
-function playUke(freq, dur){
-  ensureAudio(); dur=dur||1.0; const t0=AC.currentTime;
-  const g=AC.createGain();
-  g.gain.setValueAtTime(0.0001,t0);
-  g.gain.exponentialRampToValueAtTime(0.5,t0+0.005);
-  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
-  const o1=AC.createOscillator(); o1.type="triangle"; o1.frequency.value=freq;
-  const o2=AC.createOscillator(); o2.type="square"; o2.frequency.value=freq;
-  const g2=AC.createGain(); g2.gain.value=0.16; o2.connect(g2);
-  const lp=AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(4500,t0);
-  lp.frequency.exponentialRampToValueAtTime(1200,t0+dur);
-  o1.connect(lp); g2.connect(lp); lp.connect(g); g.connect(AC.destination);
-  o1.start(t0); o2.start(t0); o1.stop(t0+dur); o2.stop(t0+dur);
-}
+function playUke(freq, dur){ playPluck(freq, UKE_VOICE, "uke"); }  // real plucked-string tone (Karplus-Strong)
 function playUkeChord(freqs){ freqs.forEach((f,i)=>setTimeout(()=>playUke(f,1.3), i*40)); }
 function playVoice(freq, dur){
   ensureAudio(); dur=dur||1.1; const t0=AC.currentTime;
