@@ -96,6 +96,10 @@
   .gstring .line{flex:1; height:4px; border-radius:4px; background:linear-gradient(90deg,#d9c48a,#f4e6b8);}
   .gstring .lbl{width:34px; color:#f4e6b8; font-weight:800; text-align:center;}
   .gstring.pluck .line{animation:vib .3s;}
+  .gstring.target .line{background:linear-gradient(90deg,#8be28b,#38d39f); box-shadow:0 0 0 3px var(--green), 0 0 16px var(--green);}
+  .gstring.target .lbl{color:#8be28b;}
+  .fretbadge{margin-left:10px; background:var(--green); color:#fff; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px; white-space:nowrap; box-shadow:0 0 12px var(--green);}
+  .fretbadge.hidden{display:none;}
   @keyframes vib{0%,100%{transform:scaleY(1);}25%{transform:scaleY(2.6);}75%{transform:scaleY(.5);}}
   .fretboard{background:#2a1c0f; border-radius:12px; padding:14px; color:#fff; display:inline-block;}
   .fret-grid{display:grid; grid-template-columns:repeat(6,34px); gap:0;}
@@ -171,8 +175,8 @@ const I18N = {
     band_b3:"Rising Stars", band_b3_age:"ages 10–12",
     band_adult:"Grown-ups", band_adult_age:"any age, never too late",
     level_title:"Have you played before?", level_sub:"There's no wrong answer!",
-    level_new:"Never touched one", level_new_desc:"Let's start from the very beginning",
-    level_some:"I know a little", level_some_desc:"Let's build on what you know",
+    level_new:"Never touched one", level_new_desc:"We'll show the note names and go gently",
+    level_some:"I know a little", level_some_desc:"No labels, plus games and harder songs",
     inst_title:"Pick your instrument!", inst_sub:"Tap one to start playing",
     inst_piano:"Piano", inst_guitar:"Guitar", inst_drums:"Drums",
     inst_uku:"Ukulele", inst_synth:"Keyboard", inst_voice:"Singing",
@@ -219,6 +223,8 @@ const I18N = {
     song_auldlang:"Auld Lang Syne", song_greensleeves:"Greensleeves", song_mountainking:"Mountain King",
     song_watch:"Watch it play", song_yourturn:"Your turn, follow the glowing keys!",
     song_welldone:"You played it! 🌟",
+    fret_yourturn:"Your turn, tap the glowing string!", fret_open:"OPEN", fret_press:"Fret {n}",
+    mode_new:"🌱 Beginner mode", mode_some:"🎯 Know-a-little mode",
     // chords
     chord_pick:"Pick a chord to learn", chord_strum:"Strum this chord",
     chord_em:"E minor", chord_g:"G major", chord_c:"C major",
@@ -628,6 +634,9 @@ function screenHub(){
   app().appendChild(topbar(true));
   app().appendChild(el("div",{class:"screen-title",text:instEmoji()+" "+instName()}));
   app().appendChild(el("div",{class:"screen-sub",text:t("hub_sub")}));
+  app().appendChild(el("div",{class:"center",style:"margin:-6px 0 14px"},[
+    el("span",{class:"pill",style:"background:"+(STATE.level==="some"?"var(--pink)":"var(--green)")+";color:#fff",text:(STATE.level==="some"?t("mode_some"):t("mode_new"))})
+  ]));
   const grid=el("div",{class:"grid"});
   const add=(scr,em,label,desc,cls)=>{
     grid.appendChild(el("div",{class:"card "+cls,onclick:()=>go(scr)},[
@@ -636,7 +645,7 @@ function screenHub(){
       el("div",{class:"desc",text:desc}),
     ]));
   };
-  add("meet","👋",t("act_meet"),t("act_meet_desc"),"c-yellow");
+  if(STATE.level!=="some") add("meet","👋",t("act_meet"),t("act_meet_desc"),"c-yellow");  // intro for beginners only
   add("play",instEmoji(),t("act_play"),t("act_play_desc"),"c-green");
 
   if(STATE.instrument==="piano"){
@@ -735,6 +744,7 @@ function actFreePlay(){
 
 /* keyboard: octaves depend on band */
 function octaveCount(){ return STATE.band==="b1"?1:2; }
+function showLabels(){ return STATE.level!=="some"; }  // beginner sees note names; know-a-little hides them
 function buildKeyboard(playFn){
   const pf = playFn || ((f)=>playPiano(f));
   const wrap=el("div",{class:"kb-wrap"});
@@ -745,7 +755,7 @@ function buildKeyboard(playFn){
   for(let o=0;o<octs;o++){
     for(const w of whites){
       const noteName=w+(startOct+o);
-      const key=el("div",{class:"wkey",text:w,"data-note":noteName});
+      const key=el("div",{class:"wkey",text:(showLabels()?w:""),"data-note":noteName});
       key.addEventListener("pointerdown",()=>{ pf(noteFreq(noteName)); flash(key); });
       if(blackAfter[w]){
         const bn=blackAfter[w]+(startOct+o);
@@ -757,7 +767,7 @@ function buildKeyboard(playFn){
     }
   }
   const topC="C"+(startOct+octs);
-  const tk=el("div",{class:"wkey",text:"C","data-note":topC});
+  const tk=el("div",{class:"wkey",text:(showLabels()?"C":""),"data-note":topC});
   tk.addEventListener("pointerdown",()=>{ pf(noteFreq(topC)); flash(tk); });
   kb.appendChild(tk);
   wrap.appendChild(kb);
@@ -891,13 +901,17 @@ const SONGS={
 };
 // Each age section gets its OWN distinct, age-appropriate set. Grown-ups get classical &
 // folk only (no nursery tunes). Lists are disjoint across sections.
-const SONGS_BY_BAND={
-  b1:["hotcross","mary","twinkle","babyshark","rain","row","itsy"],
-  b2:["oldmac","wheels","london","frere","happyknow","headshoulders","popweasel"],
-  b3:["thisoldman","jingle","saints","birthday","ode","mountainking"],
-  ad:["furelise","beethoven5","amazing","ohsusanna","auldlang","greensleeves"]
+const SONGS_BY_BAND={ // ordered easiest -> hardest within each band
+  b1:["hotcross","mary","twinkle","rain","babyshark","row","itsy"],
+  b2:["oldmac","frere","london","wheels","happyknow","headshoulders","popweasel"],
+  b3:["jingle","saints","thisoldman","birthday","ode","mountainking"],
+  ad:["furelise","ohsusanna","amazing","beethoven5","auldlang","greensleeves"]
 };
-function songListForBand(){ return (SONGS_BY_BAND[STATE.band]||SONGS_BY_BAND.b2).slice(); }
+function songListForBand(){
+  const l=(SONGS_BY_BAND[STATE.band]||SONGS_BY_BAND.b2);
+  if(STATE.level==="some") return l.slice(Math.floor(l.length/2));   // harder half for "I know a little"
+  return l.slice(0, Math.ceil(l.length/2));                          // easier half for beginners
+}
 function actSongs(){
   if(STATE.instrument==="uku") return ukeSongScreen();
   if(STATE.instrument==="guitar") return guitarSongScreen();
@@ -942,7 +956,7 @@ function buildSongKeyboard(song){
   for(let o=0;o<octs;o++){
     for(const w of whites){
       const nn=w+(startOct+o);
-      const key=el("div",{class:"wkey",text:w,"data-note":nn});
+      const key=el("div",{class:"wkey",text:(showLabels()?w:""),"data-note":nn});
       key.addEventListener("pointerdown",()=>onSongKey(nn,key));
       songKeyEls[nn]=key;
       if(blackAfter[w]){
@@ -956,7 +970,7 @@ function buildSongKeyboard(song){
     }
   }
   const topC="C"+(startOct+octs);
-  const tk=el("div",{class:"wkey",text:"C","data-note":topC});
+  const tk=el("div",{class:"wkey",text:(showLabels()?"C":""),"data-note":topC});
   tk.addEventListener("pointerdown",()=>onSongKey(topC,tk));
   songKeyEls[topC]=tk;
   kb.appendChild(tk);
@@ -1596,63 +1610,92 @@ function buildVoiceLadder(){
 }
 
 /* ---- screens ---- */
-function ukeSongScreen(){
-  clear();
-  app().appendChild(topbar(true));
+function ukeSongScreen(){ fretSongPicker("uku"); }
+/* ---- Play a Song on guitar & ukulele: follow the glowing string, one note at a time
+   (mirrors the piano). Melodies are stored as simple tabs {string, fret}. ---- */
+const GUITAR_DISP=[{lbl:"e",f:329.63},{lbl:"B",f:246.94},{lbl:"G",f:196.00},{lbl:"D",f:146.83},{lbl:"A",f:110.00},{lbl:"E",f:82.41}];
+const UKE_DISP=[{lbl:"A",f:440.00},{lbl:"E",f:329.63},{lbl:"C",f:261.63},{lbl:"g",f:392.00}];
+function tabseq(a){var r=[];for(var i=0;i<a.length;i+=2)r.push({s:a[i],f:a[i+1]});return r;}
+const TAB_SONGS={
+  guitar:{ // strings e(0) B(1) ... ; frets 0-3 on the top two strings
+    hotcross:{name:()=>t("song_hotcross"), seq:tabseq([0,0,1,3,1,1, 0,0,1,3,1,1, 1,1,1,1,1,1,1,1, 1,3,1,3,1,3,1,3, 0,0,1,3,1,1])},
+    mary:{name:()=>t("song_mary"), seq:tabseq([0,0,1,3,1,1,1,3,0,0,0,0,0,0, 1,3,1,3,1,3, 0,0,0,3,0,3])},
+    ode:{name:()=>t("song_ode"), seq:tabseq([0,0,0,0,0,1,0,3,0,3,0,1,0,0,1,3,1,1,1,1,1,3,0,0,0,0,1,3,1,3])}
+  },
+  uku:{ // strings A(0) E(1) C(2) g(3)
+    hotcross:{name:()=>t("song_hotcross"), seq:tabseq([1,0,2,2,2,0, 1,0,2,2,2,0, 2,0,2,0,2,0,2,0, 2,2,2,2,2,2,2,2, 1,0,2,2,2,0])},
+    mary:{name:()=>t("song_mary"), seq:tabseq([1,0,2,2,2,0,2,2,1,0,1,0,1,0, 2,2,2,2,2,2, 1,0,3,0,3,0])},
+    ode:{name:()=>t("song_ode"), seq:tabseq([1,0,1,0,1,1,3,0,3,0,1,1,1,0,2,2,2,0,2,0,2,2,1,0,1,0,2,2,2,2])}
+  }
+};
+let fretState=null;
+function fretSongPicker(inst){
+  clear(); app().appendChild(topbar(true));
   app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
-  app().appendChild(el("div",{class:"screen-sub",text:t("uke_song_intro")}));
-  const seq=["c","am","f","c"];
-  let pos=0;
-  const status=el("div",{class:"scorebar"});
-  const diagram=el("div",{class:"center"});
-  const nextLbl=el("div",{class:"screen-sub"});
-  const renderStep=()=>{
-    diagram.innerHTML="";
-    if(pos>=seq.length){ status.textContent=t("uke_song_done"); nextLbl.textContent=""; confetti(); awardStar("uku_strumsong"); return; }
-    const ch=UKE_CHORDS[seq[pos]];
-    diagram.appendChild(buildFretDiagram(ch));
-    diagram.appendChild(el("div",{class:"screen-sub",text:ch.name()}));
-    status.textContent=(pos+1)+" / "+seq.length;
-    nextLbl.textContent = (pos+1<seq.length) ? t("uke_next_chord",{c:UKE_CHORDS[seq[pos+1]].name()}) : "";
-  };
-  renderStep();
-  app().appendChild(status);
-  app().appendChild(diagram);
-  app().appendChild(nextLbl);
-  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
-    el("button",{class:"bigbtn warn",text:"🪕 "+t("strum"),onclick:()=>{
-      if(pos>=seq.length){ pos=0; renderStep(); return; }
-      const ch=UKE_CHORDS[seq[pos]]; playUkeChord(ch.freqs.filter(f=>f>0)); pos++; renderStep();
-    }})
-  ]));
+  app().appendChild(el("div",{class:"screen-sub",text:t("song_pick")}));
+  const grid=el("div",{class:"grid"});
+  Object.keys(TAB_SONGS[inst]).forEach(function(id){
+    grid.appendChild(el("div",{class:"card c-orange",onclick:function(){ fretSongPlay(inst,id); }},[
+      el("span",{class:"emoji",text:"🎵"}),
+      el("div",{class:"label",text:TAB_SONGS[inst][id].name()})
+    ]));
+  });
+  app().appendChild(grid);
 }
-function guitarSongScreen(){
-  clear();
-  app().appendChild(topbar(true));
-  app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
-  app().appendChild(el("div",{class:"screen-sub",text:t("uke_song_intro")}));
-  const seq=["em","c","g","c"];
-  let pos=0;
-  const status=el("div",{class:"scorebar"});
-  const diagram=el("div",{class:"center"});
-  const nextLbl=el("div",{class:"screen-sub"});
-  const renderStep=()=>{
-    diagram.innerHTML="";
-    if(pos>=seq.length){ status.textContent=t("uke_song_done"); nextLbl.textContent=""; confetti(); awardStar("guitar_strumsong"); return; }
-    const ch=CHORDS[seq[pos]];
-    diagram.appendChild(buildFretDiagram(ch));
-    diagram.appendChild(el("div",{class:"screen-sub",text:ch.name()}));
-    status.textContent=(pos+1)+" / "+seq.length;
-    nextLbl.textContent=(pos+1<seq.length)?t("uke_next_chord",{c:CHORDS[seq[pos+1]].name()}):"";
-  };
-  renderStep();
-  app().appendChild(status); app().appendChild(diagram); app().appendChild(nextLbl);
-  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
-    el("button",{class:"bigbtn warn",text:"🎸 "+t("strum"),onclick:()=>{
-      if(pos>=seq.length){ pos=0; renderStep(); return; }
-      const ch=CHORDS[seq[pos]]; playChord(ch.freqs.filter(f=>f>0)); pos++; renderStep();
-    }})
+function guitarSongScreen(){ fretSongPicker("guitar"); }
+function fretSongPlay(inst,id){
+  clear(); app().appendChild(topbar(true));
+  const disp=inst==="uku"?UKE_DISP:GUITAR_DISP;
+  const playFn=inst==="uku"?playUke:playGuitar;
+  const song=TAB_SONGS[inst][id];
+  app().appendChild(el("div",{class:"screen-title",text:"🎵 "+song.name()}));
+  const box=el("div",{class:"guitar"});
+  if(inst!=="uku") box.appendChild(el("div",{class:"soundhole"}));
+  const rows=[];
+  disp.forEach(function(s,idx){
+    const badge=el("div",{class:"fretbadge hidden"});
+    const row=el("div",{class:"gstring"},[el("div",{class:"lbl",text:s.lbl}),el("div",{class:"line"}),badge]);
+    row.addEventListener("pointerdown",function(){ onFretTap(idx,row); });
+    box.appendChild(row); rows.push({row:row,badge:badge,s:s});
+  });
+  app().appendChild(box);
+  const status=el("div",{class:"screen-sub",text:t("fret_yourturn")});
+  app().appendChild(status);
+  app().appendChild(el("div",{class:"row",style:"margin-top:10px"},[
+    el("button",{class:"bigbtn alt",text:"👀 "+t("song_watch"),onclick:function(){ watchFretSong(); }})
   ]));
+  fretState={inst:inst,song:song,disp:disp,playFn:playFn,rows:rows,status:status,pos:0};
+  highlightFret();
+}
+function highlightFret(){
+  const st=fretState; if(!st) return;
+  st.rows.forEach(function(r){ r.row.classList.remove("target"); r.badge.classList.add("hidden"); });
+  if(st.pos>=st.song.seq.length){ st.status.textContent=t("song_welldone"); confetti(); awardStar(st.inst+"_fretsong"); return; }
+  const cur=st.song.seq[st.pos];
+  const r=st.rows[cur.s];
+  r.row.classList.add("target");
+  r.badge.textContent=(cur.f===0)?t("fret_open"):t("fret_press",{n:cur.f});
+  r.badge.classList.remove("hidden");
+  st.status.textContent=t("fret_yourturn");
+}
+function onFretTap(idx,row){
+  const st=fretState; if(!st) return;
+  const cur=st.song.seq[st.pos];
+  const pluck=function(){ row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck"); };
+  if(cur && idx===cur.s){ st.playFn(st.disp[idx].f*Math.pow(2,cur.f/12)); pluck(); st.pos++; highlightFret(); }
+  else { st.playFn(st.disp[idx].f); pluck(); } // wrong string -> open note, no advance
+}
+function watchFretSong(){
+  const st=fretState; if(!st) return;
+  st.pos=0; st.status.textContent=t("song_watch")+"…";
+  st.song.seq.forEach(function(n,i){
+    setTimeout(function(){
+      st.playFn(st.disp[n.s].f*Math.pow(2,n.f/12));
+      st.rows.forEach(function(x){ x.row.classList.remove("target"); x.badge.classList.add("hidden"); });
+      const r=st.rows[n.s]; r.row.classList.add("target"); r.row.classList.remove("pluck"); void r.row.offsetWidth; r.row.classList.add("pluck");
+      if(i===st.song.seq.length-1) setTimeout(function(){ st.pos=0; highlightFret(); },500);
+    }, i*550);
+  });
 }
 function actWarmup(){
   app().appendChild(topbar(true));
