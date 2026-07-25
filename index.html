@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Music Adventure</title>
-<meta name="build" content="fret-follow-2026-07-25b" /><!-- forces GitHub Pages rebuild -->
-<script>window.__MA_BUILD="fret-follow";</script>
+<meta name="build" content="round10-fretboard-chords-drums" /><!-- forces GitHub Pages rebuild -->
+<script>window.__MA_BUILD="round10";</script>
 <style>
   :root{
     --bg1:#6a5cff; --bg2:#ff5ca8; --card:#ffffff; --ink:#2a2350; --muted:#6b6690;
@@ -92,6 +92,9 @@
   .drumkit .drum{cursor:pointer; transform-box:fill-box; transform-origin:center;}
   .drumkit .drum.dhit{animation:drumhit .16s ease-out;}
   @keyframes drumhit{0%{transform:scale(1);}45%{transform:scale(1.07);}100%{transform:scale(1);}}
+  .drumkit .drum.beattarget{animation:beatpulse .7s ease-in-out infinite;}
+  .drumkit .drum.beattarget ellipse,.drumkit .drum.beattarget circle{filter:brightness(1.18) drop-shadow(0 0 6px #38d39f);}
+  @keyframes beatpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
   #stick{opacity:0; transform-box:fill-box; transform-origin:top center;}
   #stick.strike{animation:stk .2s ease-out;}
   @keyframes stk{0%{opacity:0; transform:translateY(-16px) rotate(-8deg);}35%{opacity:1; transform:translateY(0) rotate(0);}100%{opacity:0; transform:translateY(0);}}
@@ -102,6 +105,20 @@
   .gstring.target .lbl{color:#8be28b;}
   .fretbadge{margin-left:10px; background:var(--green); color:#fff; font-weight:800; font-size:13px; padding:5px 12px; border-radius:999px; white-space:nowrap; box-shadow:0 0 12px var(--green);}
   .fretbadge.hidden{display:none;}
+  /* fretboard for guitar/uke Play a Song */
+  .fretsong .gstring{height:42px;}
+  .fretzone{position:relative; flex:1; height:38px; display:flex; align-items:center;}
+  .fretzone .line{flex:1; height:4px; border-radius:4px; background:linear-gradient(90deg,#d9c48a,#f4e6b8);}
+  .gstring.target .fretzone .line{background:linear-gradient(90deg,#8be28b,#38d39f); box-shadow:0 0 0 3px var(--green), 0 0 16px var(--green);}
+  .fret-tick{position:absolute; top:3px; bottom:3px; width:3px; background:rgba(255,255,255,.22); border-radius:2px;}
+  .finger-dot{position:absolute; top:50%; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:50%;
+    background:var(--pink); border:3px solid #fff; box-shadow:0 0 14px var(--pink); display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-size:13px; z-index:3; pointer-events:none;}
+  .finger-dot.open{background:rgba(0,0,0,.25); border-color:#8be28b; box-shadow:0 0 14px #8be28b; color:#eafbea;}
+  .finger-dot.hidden{display:none;}
+  .gstring.muted{opacity:.45;}
+  .gstring.muted .line{background:#7a6a4a;}
+  .mute-x{position:absolute; left:3%; top:50%; transform:translate(-50%,-50%); color:#ff8a8a; font-weight:800; font-size:16px; z-index:3;}
   @keyframes vib{0%,100%{transform:scaleY(1);}25%{transform:scaleY(2.6);}75%{transform:scaleY(.5);}}
   .fretboard{background:#2a1c0f; border-radius:12px; padding:14px; color:#fff; display:inline-block;}
   .fret-grid{display:grid; grid-template-columns:repeat(6,34px); gap:0;}
@@ -223,12 +240,20 @@ const I18N = {
     song_headshoulders:"Head & Shoulders", song_wheels:"Wheels on the Bus",
     song_beethoven5:"Beethoven's 5th", song_amazing:"Amazing Grace", song_ohsusanna:"Oh Susanna",
     song_auldlang:"Auld Lang Syne", song_greensleeves:"Greensleeves", song_mountainking:"Mountain King",
+    song_michaelrow:"Michael Row the Boat", song_clementine:"Oh My Darling Clementine", song_kumbaya:"Kumbaya",
     song_watch:"Watch it play", song_yourturn:"Your turn, follow the glowing keys!",
     song_welldone:"You played it! 🌟",
     fret_yourturn:"Your turn, tap the glowing string!", fret_open:"OPEN", fret_press:"Fret {n}",
+    fret_help:"The glowing string is your note. A number dot shows where to press; a green ring means just play it open.",
+    beat_help:"Follow the glowing drum, tap it in time! The stick shows where to hit.",
+    beat_rock:"Rock Beat", beat_wewill:"Stomp Stomp Clap", beat_boomclap:"Boom Clap", beat_disco:"Disco",
+    beat_march:"Marching Band", beat_heartbeat:"Heartbeat", beat_train:"Choo-Choo Train", beat_waltz:"Waltz 1-2-3",
+    beat_hiphop:"Hip Hop", beat_reggae:"Reggae", beat_stomp:"Stadium Stomp", beat_jazzride:"Jazz Ride",
+    beat_fill:"Drum Fill", beat_cha:"Cha-Cha", beat_roundkit:"Round the Kit",
     mode_new:"🌱 Beginner mode", mode_some:"🎯 Know-a-little mode",
     // chords
     chord_pick:"Pick a chord to learn", chord_strum:"Strum this chord",
+    chord_help:"Press the numbered dots, tap each string to hear it, or hit STRUM for the whole chord. Faded (✕) strings aren't played.",
     chord_em:"E minor", chord_g:"G major", chord_c:"C major",
     chord_tip_open:"O = play this string open", chord_tip_num:"Numbers = which finger presses",
     // rhythm
@@ -543,6 +568,7 @@ function render(){
   if(s==="tab") return actTab();
   if(s==="warmup") return actWarmup();
   if(s==="copy") return actCopy();
+  if(s==="beatsong") return beatSongPicker();
   if(s==="match") return actMatch();
   if(s==="basics") return actBasics();
   if(s==="buying") return actBuying();
@@ -661,6 +687,7 @@ function screenHub(){
     if(STATE.level==="some"&&STATE.band==="b3") add("tab","📖",t("act_tab"),t("act_tab_desc"),"c-orange");
   }
   if(STATE.instrument==="drums"){
+    add("beatsong","🎼",t("act_songs"),t("act_songs_desc"),"c-orange");
     add("beat","🧱",t("act_beat"),t("act_beat_desc"),"c-purple");
     add("echo","🔁",t("act_echo"),t("act_echo_desc"),"c-blue");
   }
@@ -845,9 +872,14 @@ const DRUMKIT_SVG=`
   <g class="dpad drum" data-drum="snare" data-x="118" data-y="256">
     <ellipse cx="118" cy="256" rx="54" ry="35" fill="#eef1f8" stroke="#c9cede" stroke-width="5"/><ellipse cx="118" cy="252" rx="44" ry="26" fill="url(#dhead)"/>
   </g>
+  <g class="dpad drum kickpedal" data-drum="kick" data-x="240" data-y="322">
+    <rect x="206" y="316" width="68" height="15" rx="6" fill="#c9cede" stroke="#9aa0b0" stroke-width="2"/>
+    <rect x="230" y="301" width="20" height="18" rx="4" fill="#8a90a2" stroke="#6b7080" stroke-width="1.5"/>
+    <text x="240" y="328" text-anchor="middle" font-size="9" font-weight="800" fill="#3a2350" font-family="inherit">PEDAL</text>
+  </g>
   <g id="stickpos"><g id="stick"><rect x="-4" y="0" width="9" height="74" rx="4" fill="#e0ad55" stroke="#a9781c" stroke-width="1.5"/><circle cx="0" cy="74" r="6" fill="#c98a2a"/></g></g>
 </svg>`;
-function buildDrumKit(){
+function buildDrumKit(onHit){
   const wrap=el("div",{class:"drumkit-wrap"});
   wrap.innerHTML=DRUMKIT_SVG;
   const svg=wrap.querySelector("svg");
@@ -856,7 +888,6 @@ function buildDrumKit(){
   [].slice.call(svg.querySelectorAll(".drum")).forEach(function(g){
     const type=g.getAttribute("data-drum");
     g.addEventListener("pointerdown",function(){
-      playDrum(type);
       g.classList.remove("dhit"); void g.getBoundingClientRect(); g.classList.add("dhit");
       setTimeout(function(){ g.classList.remove("dhit"); },170);
       if(stickpos&&stick){
@@ -864,9 +895,77 @@ function buildDrumKit(){
         stick.classList.remove("strike"); void stick.getBoundingClientRect(); stick.classList.add("strike");
         setTimeout(function(){ stick.classList.remove("strike"); },200);
       }
+      if(onHit) onHit(type,g); else playDrum(type);
     });
   });
   return wrap;
+}
+/* ---------- Drums: Play a Song (follow-along beats) ---------- */
+const BEAT_SONGS={
+  rock:{name:()=>t("beat_rock"), seq:["kick","hihat","snare","hihat","kick","hihat","snare","hihat"]},
+  wewill:{name:()=>t("beat_wewill"), seq:["kick","kick","snare","kick","kick","snare","kick","kick","snare"]},
+  boomclap:{name:()=>t("beat_boomclap"), seq:["kick","snare","kick","snare","kick","snare","kick","snare"]},
+  disco:{name:()=>t("beat_disco"), seq:["kick","hihat","hihat","hihat","kick","hihat","hihat","hihat"]},
+  march:{name:()=>t("beat_march"), seq:["snare","snare","snare","snare","snare","snare","snare","crash"]},
+  heartbeat:{name:()=>t("beat_heartbeat"), seq:["kick","kick","snare","kick","kick","snare"]},
+  train:{name:()=>t("beat_train"), seq:["kick","snare","kick","snare","kick","snare","kick","snare"]},
+  waltz:{name:()=>t("beat_waltz"), seq:["kick","hihat","hihat","kick","hihat","hihat"]},
+  hiphop:{name:()=>t("beat_hiphop"), seq:["kick","hihat","snare","hihat","kick","kick","snare","hihat"]},
+  reggae:{name:()=>t("beat_reggae"), seq:["hihat","snare","hihat","kick","hihat","snare","hihat","kick"]},
+  stomp:{name:()=>t("beat_stomp"), seq:["kick","kick","snare","crash","kick","kick","snare","crash"]},
+  jazzride:{name:()=>t("beat_jazzride"), seq:["ride","ride","snare","ride","ride","ride","snare","ride"]},
+  fill:{name:()=>t("beat_fill"), seq:["snare","snare","kick","snare","snare","kick","snare","crash"]},
+  cha:{name:()=>t("beat_cha"), seq:["kick","snare","kick","kick","snare","kick","snare","kick"]},
+  roundkit:{name:()=>t("beat_roundkit"), seq:["kick","snare","hihat","crash","kick","snare","hihat","crash"]}
+};
+let beatState=null;
+function beatSongPicker(){
+  clear(); app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🥁 "+t("act_songs")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("song_pick")}));
+  const grid=el("div",{class:"grid"});
+  Object.keys(BEAT_SONGS).forEach(function(id){
+    grid.appendChild(el("div",{class:"card c-pink",onclick:function(){ beatSongPlay(id); }},[
+      el("span",{class:"emoji",text:"🥁"}),
+      el("div",{class:"label",text:BEAT_SONGS[id].name()})
+    ]));
+  });
+  app().appendChild(grid);
+}
+function beatSongPlay(id){
+  clear(); app().appendChild(topbar(true));
+  const song=BEAT_SONGS[id];
+  app().appendChild(el("div",{class:"screen-title",text:"🥁 "+song.name()}));
+  app().appendChild(el("div",{class:"screen-sub",style:"font-size:15px",text:t("beat_help")}));
+  const kit=buildDrumKit(function(type,g){ onBeatHit(type,g); });
+  app().appendChild(kit);
+  const status=el("div",{class:"screen-sub",text:t("fret_yourturn")});
+  app().appendChild(status);
+  app().appendChild(el("div",{class:"row",style:"margin-top:8px"},[
+    el("button",{class:"bigbtn alt",text:"👀 "+t("song_watch"),onclick:function(){ watchBeatSong(); }})
+  ]));
+  beatState={song:song,pos:0,svg:kit.querySelector("svg"),status:status};
+  highlightBeat();
+}
+function beatTargets(type){ return beatState.svg? [].slice.call(beatState.svg.querySelectorAll('[data-drum="'+type+'"]')) : []; }
+function highlightBeat(){
+  const st=beatState; if(!st) return;
+  if(st.svg) [].slice.call(st.svg.querySelectorAll(".beattarget")).forEach(function(x){ x.classList.remove("beattarget"); });
+  if(st.pos>=st.song.seq.length){ st.status.textContent=t("song_welldone"); confetti(); awardStar("drums_beatsong"); return; }
+  beatTargets(st.song.seq[st.pos]).forEach(function(g){ g.classList.add("beattarget"); });
+  st.status.textContent=t("fret_yourturn");
+}
+function onBeatHit(type,g){
+  const st=beatState; if(!st){ playDrum(type); return; }
+  playDrum(type);
+  if(st.pos<st.song.seq.length && type===st.song.seq[st.pos]){ st.pos++; highlightBeat(); }
+}
+function watchBeatSong(){
+  const st=beatState; if(!st) return; st.pos=0; st.status.textContent=t("song_watch")+"…";
+  st.song.seq.forEach(function(type,i){ setTimeout(function(){
+    st.pos=i; highlightBeat(); playDrum(type); st.status.textContent=t("song_watch")+"…";
+    if(i===st.song.seq.length-1) setTimeout(function(){ st.pos=0; highlightBeat(); },500);
+  }, i*440); });
 }
 
 /* ---------- SONGS (piano + guitar-friendly melodies) ---------- */
@@ -899,21 +998,19 @@ const SONGS={
   ohsusanna:{name:()=>t("song_ohsusanna"), notes:["C4","D4","E4","G4","G4","A4","G4","E4","C4","D4","E4","E4","D4","C4","D4","E4","E4","F4","A4","A4","G4","E4","C4","D4","E4","D4","C4"]},
   auldlang:{name:()=>t("song_auldlang"), notes:["G4","C5","C5","C5","E5","D5","C5","D5","E5","C5","C5","E5","G5","G5","E5","C5","D5","C5","A4","G4","C5"]},
   greensleeves:{name:()=>t("song_greensleeves"), notes:["A4","C5","D5","E5","F5","E5","D5","B4","G4","A4","B4","C5","A4","G#4","A4","E4","E4","A4","C5","D5","E5","F5","E5","D5","B4","G4"]},
-  mountainking:{name:()=>t("song_mountainking"), notes:["C4","D4","D#4","F4","G4","D#4","G4","F#4","D4","F#4","D4","C4","D4","D#4","F4","G4","G#4","G4","F4","D#4","F4","D4"]}
+  mountainking:{name:()=>t("song_mountainking"), notes:["C4","D4","D#4","F4","G4","D#4","G4","F#4","D4","F#4","D4","C4","D4","D#4","F4","G4","G#4","G4","F4","D#4","F4","D4"]},
+  michaelrow:{name:()=>t("song_michaelrow"), notes:["C4","E4","G4","C5","G4","E4","G4","A4","G4","E4","D4","C4"]},
+  clementine:{name:()=>t("song_clementine"), notes:["C4","F4","F4","F4","D4","F4","A4","G4","F4","G4","A4","G4","F4","C4","F4"]},
+  kumbaya:{name:()=>t("song_kumbaya"), notes:["C4","F4","F4","F4","E4","F4","G4","C4","F4","F4","F4","G4","F4","E4","C4"]}
 };
 // Each age section gets its OWN distinct, age-appropriate set. Grown-ups get classical &
 // folk only (no nursery tunes). Lists are disjoint across sections.
-const SONGS_BY_BAND={ // ordered easiest -> hardest within each band
-  b1:["hotcross","mary","twinkle","rain","babyshark","row","itsy"],
-  b2:["oldmac","frere","london","wheels","happyknow","headshoulders","popweasel"],
-  b3:["jingle","saints","thisoldman","birthday","ode","mountainking"],
-  ad:["furelise","ohsusanna","amazing","beethoven5","auldlang","greensleeves"]
-};
-function songListForBand(){
-  const l=(SONGS_BY_BAND[STATE.band]||SONGS_BY_BAND.b2);
-  if(STATE.level==="some") return l.slice(Math.floor(l.length/2));   // harder half for "I know a little"
-  return l.slice(0, Math.ceil(l.length/2));                          // easier half for beginners
-}
+// A generous kids' pool (nursery + easy classical, ordered easy -> hard) and a grown-up
+// pool (classical + folk, no nursery). Every Play a Song draws from these, so each
+// section offers a big list. Level shapes labels/intro/games, not the song count.
+const KID_POOL=["hotcross","mary","twinkle","babyshark","rain","row","oldmac","itsy","london","frere","wheels","happyknow","headshoulders","thisoldman","popweasel","jingle","saints","ode"];
+const ADULT_POOL=["furelise","beethoven5","amazing","ohsusanna","auldlang","greensleeves","mountainking","ode","saints","birthday","michaelrow","clementine","kumbaya"];
+function songListForBand(){ return (STATE.band==="ad"? ADULT_POOL : KID_POOL).slice(); }
 function actSongs(){
   if(STATE.instrument==="uku") return ukeSongScreen();
   if(STATE.instrument==="guitar") return guitarSongScreen();
@@ -1037,13 +1134,40 @@ function actChords(){
 function chordScreen(id){
   clear();
   const ch=chordSet().map[id];
+  const inst=STATE.instrument;
+  const disp=inst==="uku"?UKE_DISP:GUITAR_DISP;   // display high -> low
+  const playFn=inst==="uku"?playUke:playGuitar;
+  const n=disp.length;
+  let maxFret=3; ch.shape.forEach(function(s){ if(s[0]>maxFret) maxFret=s[0]; });
   app().appendChild(topbar(true));
-  app().appendChild(el("div",{class:"screen-title",text:"🎸 "+ch.name()}));
-  app().appendChild(el("div",{class:"center"},[buildFretDiagram(ch)]));
-  app().appendChild(el("div",{class:"panel center",style:"margin-top:14px"},[
-    el("p",{text:t("chord_tip_open")+" · "+t("chord_tip_num"),style:"font-size:15px"}),
-    el("button",{class:"bigbtn warn",text:"🔊 "+t("chord_strum"),onclick:()=>{
-      const fr=ch.freqs.filter(f=>f>0); (STATE.instrument==="uku"?playUkeChord:playChord)(fr); confetti(); awardStar(STATE.instrument+"_chord_"+id);
+  app().appendChild(el("div",{class:"screen-title",text:instEmoji()+" "+ch.name()}));
+  app().appendChild(el("div",{class:"screen-sub",style:"font-size:15px",text:t("chord_help")}));
+  const board=el("div",{class:"guitar fretsong"});
+  disp.forEach(function(s,i){
+    const cell=ch.shape[n-1-i];           // shape is physical low->high; disp is high->low
+    const fret=cell[0];                    // -1 = don't play this string (muted)
+    const zone=el("div",{class:"fretzone"});
+    zone.appendChild(el("div",{class:"line"}));
+    for(let fw=1; fw<=maxFret; fw++){ const tk=el("div",{class:"fret-tick"}); tk.style.left=(fw/(maxFret+0.5)*100)+"%"; zone.appendChild(tk); }
+    if(fret>=0){
+      const dot=el("div",{class:"finger-dot"+(fret===0?" open":"")});
+      dot.style.left=fx(fret,maxFret)+"%"; dot.textContent=fret===0?"O":String(fret);
+      zone.appendChild(dot);
+    } else {
+      zone.appendChild(el("div",{class:"mute-x",text:"✕"}));
+    }
+    const row=el("div",{class:"gstring"+(fret<0?" muted":"")},[el("div",{class:"lbl",text:s.lbl}),zone]);
+    if(fret>=0){
+      const freq=disp[i].f*Math.pow(2,fret/12);
+      row.addEventListener("pointerdown",function(){ playFn(freq); row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck"); });
+    }
+    board.appendChild(row);
+  });
+  app().appendChild(board);
+  app().appendChild(el("div",{class:"row",style:"margin-top:12px"},[
+    el("button",{class:"bigbtn warn",text:(inst==="uku"?"🪕":"🎸")+" "+t("chord_strum"),onclick:function(){
+      const fr=ch.freqs.filter(function(f){return f>0;});
+      (inst==="uku"?playUkeChord:playChord)(fr); confetti(); awardStar(inst+"_chord_"+id);
     }})
   ]));
 }
@@ -1613,90 +1737,123 @@ function buildVoiceLadder(){
 
 /* ---- screens ---- */
 function ukeSongScreen(){ fretSongPicker("uku"); }
-/* ---- Play a Song on guitar & ukulele: follow the glowing string, one note at a time
-   (mirrors the piano). Melodies are stored as simple tabs {string, fret}. ---- */
+/* ---- Play a Song on guitar & ukulele ----
+   A visual fretboard: the string to play GLOWS and a numbered finger-dot shows exactly
+   WHERE to press (position along the string + the fret number inside the dot; a green
+   ring = open string). Any melody is auto-arranged onto the fretboard by resolveTab,
+   so every song in the library is playable here too. ---- */
 const GUITAR_DISP=[{lbl:"e",f:329.63},{lbl:"B",f:246.94},{lbl:"G",f:196.00},{lbl:"D",f:146.83},{lbl:"A",f:110.00},{lbl:"E",f:82.41}];
 const UKE_DISP=[{lbl:"A",f:440.00},{lbl:"E",f:329.63},{lbl:"C",f:261.63},{lbl:"g",f:392.00}];
-function tabseq(a){var r=[];for(var i=0;i<a.length;i+=2)r.push({s:a[i],f:a[i+1]});return r;}
-const TAB_SONGS={
-  guitar:{ // strings e(0) B(1) ... ; frets 0-3 on the top two strings
-    hotcross:{name:()=>t("song_hotcross"), seq:tabseq([0,0,1,3,1,1, 0,0,1,3,1,1, 1,1,1,1,1,1,1,1, 1,3,1,3,1,3,1,3, 0,0,1,3,1,1])},
-    mary:{name:()=>t("song_mary"), seq:tabseq([0,0,1,3,1,1,1,3,0,0,0,0,0,0, 1,3,1,3,1,3, 0,0,0,3,0,3])},
-    ode:{name:()=>t("song_ode"), seq:tabseq([0,0,0,0,0,1,0,3,0,3,0,1,0,0,1,3,1,1,1,1,1,3,0,0,0,0,1,3,1,3])}
-  },
-  uku:{ // strings A(0) E(1) C(2) g(3)
-    hotcross:{name:()=>t("song_hotcross"), seq:tabseq([1,0,2,2,2,0, 1,0,2,2,2,0, 2,0,2,0,2,0,2,0, 2,2,2,2,2,2,2,2, 1,0,2,2,2,0])},
-    mary:{name:()=>t("song_mary"), seq:tabseq([1,0,2,2,2,0,2,2,1,0,1,0,1,0, 2,2,2,2,2,2, 1,0,3,0,3,0])},
-    ode:{name:()=>t("song_ode"), seq:tabseq([1,0,1,0,1,1,3,0,3,0,1,1,1,0,2,2,2,0,2,0,2,2,1,0,1,0,2,2,2,2])}
+const FRET_MAX=4;
+// Turn a melody (note names) into {string,fret} positions, transposing by octaves so it
+// sits in an easy low-fret range and preferring low frets + small string jumps.
+function resolveTab(inst, notes){
+  const disp=inst==="uku"?UKE_DISP:GUITAR_DISP;
+  const freqs=notes.map(noteFreq);
+  const HARD=15;   // absolute fret ceiling used only as an in-tune safety net
+  function place(tf, maxf, prevS){       // best in-tune position for ONE note within maxf frets
+    let best=null;
+    for(let s=0;s<disp.length;s++){
+      const r=12*Math.log2(tf/disp[s].f); const fr=Math.round(r);
+      if(fr<0||fr>maxf) continue; if(Math.abs(r-fr)>0.2) continue;   // must be a real, in-tune fret
+      const jump=prevS==null?0:Math.abs(s-prevS); const score=fr*2+jump;
+      if(!best||score<best.score) best={s:s,f:fr,score:score};
+    }
+    return best;
   }
-};
+  function build(k, maxf){
+    const shift=Math.pow(2,k); const seq=[]; let used=0, prevS=null, ok=true;
+    for(let i=0;i<freqs.length;i++){
+      let p=place(freqs[i]*shift, maxf, prevS);
+      if(!p) p=place(freqs[i]*shift, HARD, prevS);   // still in tune, just a higher fret
+      if(!p){ ok=false; p={s:0,f:0}; }
+      used=Math.max(used,p.f); prevS=p.s; seq.push({s:p.s,f:p.f});
+    }
+    return {seq:seq,maxFret:used,ok:ok};
+  }
+  // prefer the octave shift + smallest fret window that fits the whole melody in tune
+  for(let mf=FRET_MAX; mf<=HARD; mf++){
+    let win=null;
+    for(let k=-3;k<=3;k++){ const r=build(k,mf); if(r.ok && (!win||r.maxFret<win.maxFret)) win=r; }
+    if(win) return win;
+  }
+  return build(0,HARD);
+}
 let fretState=null;
 function fretSongPicker(inst){
   clear(); app().appendChild(topbar(true));
   app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
   app().appendChild(el("div",{class:"screen-sub",text:t("song_pick")}));
   const grid=el("div",{class:"grid"});
-  Object.keys(TAB_SONGS[inst]).forEach(function(id){
+  songListForBand().forEach(function(id){
     grid.appendChild(el("div",{class:"card c-orange",onclick:function(){ fretSongPlay(inst,id); }},[
       el("span",{class:"emoji",text:"🎵"}),
-      el("div",{class:"label",text:TAB_SONGS[inst][id].name()})
+      el("div",{class:"label",text:SONGS[id].name()})
     ]));
   });
   app().appendChild(grid);
 }
 function guitarSongScreen(){ fretSongPicker("guitar"); }
+function fx(f,maxFret){ return f===0?4:((f-0.5)/(maxFret+0.5)*100); }  // dot x% along the string
 function fretSongPlay(inst,id){
   clear(); app().appendChild(topbar(true));
   const disp=inst==="uku"?UKE_DISP:GUITAR_DISP;
   const playFn=inst==="uku"?playUke:playGuitar;
-  const song=TAB_SONGS[inst][id];
-  app().appendChild(el("div",{class:"screen-title",text:"🎵 "+song.name()}));
-  const box=el("div",{class:"guitar"});
-  if(inst!=="uku") box.appendChild(el("div",{class:"soundhole"}));
+  const src=SONGS[id];
+  const res=resolveTab(inst,src.notes);
+  const maxFret=Math.max(3,res.maxFret);
+  app().appendChild(el("div",{class:"screen-title",text:"🎵 "+src.name()}));
+  app().appendChild(el("div",{class:"screen-sub",style:"font-size:15px",text:t("fret_help")}));
+  const board=el("div",{class:"guitar fretsong"});
   const rows=[];
   disp.forEach(function(s,idx){
-    const badge=el("div",{class:"fretbadge hidden"});
-    const row=el("div",{class:"gstring"},[el("div",{class:"lbl",text:s.lbl}),el("div",{class:"line"}),badge]);
+    const zone=el("div",{class:"fretzone"});
+    zone.appendChild(el("div",{class:"line"}));
+    for(let fw=1; fw<=maxFret; fw++){ const tick=el("div",{class:"fret-tick"}); tick.style.left=(fw/(maxFret+0.5)*100)+"%"; zone.appendChild(tick); }
+    const dot=el("div",{class:"finger-dot hidden"}); zone.appendChild(dot);
+    const row=el("div",{class:"gstring"},[el("div",{class:"lbl",text:s.lbl}),zone]);
     row.addEventListener("pointerdown",function(){ onFretTap(idx,row); });
-    box.appendChild(row); rows.push({row:row,badge:badge,s:s});
+    board.appendChild(row); rows.push({row:row,dot:dot,s:s});
   });
-  app().appendChild(box);
+  app().appendChild(board);
   const status=el("div",{class:"screen-sub",text:t("fret_yourturn")});
   app().appendChild(status);
   app().appendChild(el("div",{class:"row",style:"margin-top:10px"},[
     el("button",{class:"bigbtn alt",text:"👀 "+t("song_watch"),onclick:function(){ watchFretSong(); }})
   ]));
-  fretState={inst:inst,song:song,disp:disp,playFn:playFn,rows:rows,status:status,pos:0};
+  fretState={inst:inst,seq:res.seq,maxFret:maxFret,disp:disp,playFn:playFn,rows:rows,status:status,pos:0};
   highlightFret();
 }
 function highlightFret(){
   const st=fretState; if(!st) return;
-  st.rows.forEach(function(r){ r.row.classList.remove("target"); r.badge.classList.add("hidden"); });
-  if(st.pos>=st.song.seq.length){ st.status.textContent=t("song_welldone"); confetti(); awardStar(st.inst+"_fretsong"); return; }
-  const cur=st.song.seq[st.pos];
-  const r=st.rows[cur.s];
+  st.rows.forEach(function(r){ r.row.classList.remove("target"); r.dot.classList.add("hidden"); });
+  if(st.pos>=st.seq.length){ st.status.textContent=t("song_welldone"); confetti(); awardStar(st.inst+"_fretsong"); return; }
+  const cur=st.seq[st.pos]; const r=st.rows[cur.s];
   r.row.classList.add("target");
-  r.badge.textContent=(cur.f===0)?t("fret_open"):t("fret_press",{n:cur.f});
-  r.badge.classList.remove("hidden");
+  r.dot.style.left=fx(cur.f,st.maxFret)+"%";
+  r.dot.textContent=cur.f===0?"O":String(cur.f);
+  r.dot.classList.toggle("open", cur.f===0);
+  r.dot.classList.remove("hidden");
   st.status.textContent=t("fret_yourturn");
 }
 function onFretTap(idx,row){
   const st=fretState; if(!st) return;
-  const cur=st.song.seq[st.pos];
+  const cur=st.seq[st.pos];
   const pluck=function(){ row.classList.remove("pluck"); void row.offsetWidth; row.classList.add("pluck"); };
   if(cur && idx===cur.s){ st.playFn(st.disp[idx].f*Math.pow(2,cur.f/12)); pluck(); st.pos++; highlightFret(); }
-  else { st.playFn(st.disp[idx].f); pluck(); } // wrong string -> open note, no advance
+  else { st.playFn(st.disp[idx].f); pluck(); }  // other string -> open note, no advance
 }
 function watchFretSong(){
   const st=fretState; if(!st) return;
   st.pos=0; st.status.textContent=t("song_watch")+"…";
-  st.song.seq.forEach(function(n,i){
+  st.seq.forEach(function(n,i){
     setTimeout(function(){
+      st.pos=i; highlightFret();
       st.playFn(st.disp[n.s].f*Math.pow(2,n.f/12));
-      st.rows.forEach(function(x){ x.row.classList.remove("target"); x.badge.classList.add("hidden"); });
-      const r=st.rows[n.s]; r.row.classList.add("target"); r.row.classList.remove("pluck"); void r.row.offsetWidth; r.row.classList.add("pluck");
-      if(i===st.song.seq.length-1) setTimeout(function(){ st.pos=0; highlightFret(); },500);
-    }, i*550);
+      const r=st.rows[n.s]; r.row.classList.remove("pluck"); void r.row.offsetWidth; r.row.classList.add("pluck");
+      st.status.textContent=t("song_watch")+"…";
+      if(i===st.seq.length-1) setTimeout(function(){ st.pos=0; highlightFret(); },550);
+    }, i*560);
   });
 }
 function actWarmup(){
