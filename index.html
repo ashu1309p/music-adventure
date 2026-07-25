@@ -67,20 +67,20 @@
 
   /* piano */
   .kb-wrap{overflow-x:auto; padding:10px 0; -webkit-overflow-scrolling:touch;}
-  .keyboard{position:relative; display:flex; height:210px; min-width:min-content; margin:0 auto; width:fit-content;}
-  .wkey{width:56px; height:210px; background:linear-gradient(#fff,#f0eefc); border:2px solid #d7d2ef;
+  .keyboard{position:relative; display:flex; height:210px; margin:0 auto; width:100%; max-width:900px; justify-content:center; touch-action:none;}
+  .wkey{flex:1 1 0; min-width:0; max-width:56px; height:210px; background:linear-gradient(#fff,#f0eefc); border:2px solid #d7d2ef;
     border-radius:0 0 10px 10px; margin:0 1px; display:flex; align-items:flex-end; justify-content:center;
-    padding-bottom:10px; font-weight:800; color:#9a94c0; cursor:pointer; position:relative;}
+    padding-bottom:10px; font-weight:800; color:#9a94c0; cursor:pointer; position:relative; touch-action:none;}
   .wkey:active,.wkey.on{background:linear-gradient(#ffe9a8,#ffd23f); color:#7a5b00;}
-  .bkey{width:36px; height:130px; background:linear-gradient(#4a4470,#231f3d); border-radius:0 0 8px 8px;
-    position:absolute; top:0; z-index:2; cursor:pointer; margin-left:-18px;}
+  .bkey{width:clamp(22px,4.4%,36px); height:130px; background:linear-gradient(#4a4470,#231f3d); border-radius:0 0 8px 8px;
+    position:absolute; top:0; z-index:2; cursor:pointer; transform:translateX(-50%); touch-action:none;}
   .bkey:active,.bkey.on{background:linear-gradient(#ff8fc0,#ff5ca8);}
   .key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
   .bkey.key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
 
   /* guitar */
   .guitar{background:#3a2a18; border-radius:16px; padding:16px; }
-  .gstring{height:38px; margin:8px 0; position:relative; cursor:pointer; display:flex; align-items:center;}
+  .gstring{height:38px; margin:8px 0; position:relative; cursor:pointer; display:flex; align-items:center; touch-action:none;}
   .gstring .line{flex:1; height:4px; border-radius:4px; background:linear-gradient(90deg,#d9c48a,#f4e6b8);}
   .gstring .lbl{width:34px; color:#f4e6b8; font-weight:800; text-align:center;}
   .gstring.pluck .line{animation:vib .3s;}
@@ -97,7 +97,8 @@
   /* drums */
   .kit{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; max-width:480px; margin:0 auto;}
   .pad{border-radius:20px; padding:30px 10px; text-align:center; color:#fff; font-size:22px; font-weight:800;
-    cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.25); border:none; font-family:inherit;}
+    cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.25); border:none; font-family:inherit; touch-action:none;}
+  .ladder-key{touch-action:none;}
   .pad:active,.pad.hit{transform:translateY(5px) scale(.98); box-shadow:0 3px 0 rgba(0,0,0,.25); filter:brightness(1.25);}
   .pad.kick{background:var(--purple);} .pad.snare{background:var(--pink);}
   .pad.hihat{background:var(--blue);} .pad.crash{background:var(--orange);}
@@ -1451,7 +1452,7 @@ function buildVoiceLadder(){
   const wrap=el("div",{class:"center"});
   const ladder=el("div",{style:"display:flex;flex-direction:column-reverse;gap:8px;max-width:340px;margin:0 auto;"});
   VOICE_LADDER.forEach((step,i)=>{
-    const b=el("button",{class:"bigbtn",style:"width:100%;background:hsl("+(i*32)+",72%,55%)",text:step.s});
+    const b=el("button",{class:"bigbtn ladder-key",style:"width:100%;background:hsl("+(i*32)+",72%,55%)",text:step.s});
     b.addEventListener("pointerdown",()=>{ playVoice(noteFreq(step.n),0.7); b.style.filter="brightness(1.25)"; setTimeout(()=>b.style.filter="",150); });
     ladder.appendChild(b);
   });
@@ -1718,6 +1719,50 @@ const VIDEOS_ADULT={
     {t:"Learn to sing in tune (adults)", u:"https://www.youtube.com/results?search_query=how+to+sing+in+tune+adult+beginner", em:"🎯"}
   ]
 };
+</script>
+
+<script>
+"use strict";
+/* ============================================================
+   SWIPE / GLISSANDO
+   Drag a finger (or mouse) across strings, keys, pads or the
+   singing ladder and each one sounds as you pass over it — no
+   need to lift between notes. It reuses each surface's existing
+   tap action by re-dispatching a pointerdown on the newly
+   entered surface, so it works for every instrument at once.
+   touch-action:none on those surfaces (set in CSS) stops the
+   drag from scrolling so the notes play instead.
+   ============================================================ */
+(function(){
+  var down=false, prev=null;
+  var CLS=["wkey","bkey","gstring","pad","ladder-key"];
+  function surface(node){
+    var n=node;
+    while(n && n.classList){
+      for(var i=0;i<CLS.length;i++){ if(n.classList.contains(CLS[i])) return n; }
+      n=n.parentElement;
+    }
+    return null;
+  }
+  function fire(el){
+    try{ el.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true})); }
+    catch(err){ el.dispatchEvent(new Event("pointerdown",{bubbles:true})); }
+  }
+  document.addEventListener("pointerdown", function(e){
+    var el=surface(e.target);
+    if(el){ down=true; prev=el; }   // first note already sounds via the element's own handler
+  }, true);
+  document.addEventListener("pointermove", function(e){
+    if(!down) return;
+    var t=document.elementFromPoint(e.clientX, e.clientY);
+    var el=surface(t);
+    if(el && el!==prev){ prev=el; fire(el); }
+  }, {passive:true});
+  function end(){ down=false; prev=null; }
+  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){
+    document.addEventListener(ev, end, true);
+  });
+})();
 </script>
 </body>
 </html>
