@@ -79,8 +79,20 @@
   .bkey.key-hi{box-shadow:0 0 0 4px var(--green), 0 0 22px var(--green);}
 
   /* guitar */
-  .guitar{background:#3a2a18; border-radius:16px; padding:16px; }
-  .gstring{height:38px; margin:8px 0; position:relative; cursor:pointer; display:flex; align-items:center; touch-action:none;}
+  .guitar{position:relative; overflow:hidden; background:linear-gradient(160deg,#4a3320,#2a1d10); border-radius:20px; padding:16px;
+    box-shadow:inset 0 2px 6px rgba(255,255,255,.06), 0 10px 22px rgba(0,0,0,.28);}
+  .soundhole{position:absolute; right:6%; top:50%; transform:translateY(-50%); width:78px; height:78px; border-radius:50%;
+    background:radial-gradient(circle at 44% 38%, #241610, #080402 72%); box-shadow:inset 0 0 0 5px #6b4a22, inset 0 0 0 9px #3a2712, 0 1px 2px rgba(0,0,0,.4); pointer-events:none;}
+  .gstring{height:38px; margin:8px 0; position:relative; z-index:1; cursor:pointer; display:flex; align-items:center; touch-action:none;}
+  /* realistic drum kit */
+  .drumkit-wrap{touch-action:none; margin:0 auto; max-width:560px;}
+  .drumkit{width:100%; height:auto; display:block; touch-action:none; filter:drop-shadow(0 10px 16px rgba(0,0,0,.35));}
+  .drumkit .drum{cursor:pointer; transform-box:fill-box; transform-origin:center;}
+  .drumkit .drum.dhit{animation:drumhit .16s ease-out;}
+  @keyframes drumhit{0%{transform:scale(1);}45%{transform:scale(1.07);}100%{transform:scale(1);}}
+  #stick{opacity:0; transform-box:fill-box; transform-origin:top center;}
+  #stick.strike{animation:stk .2s ease-out;}
+  @keyframes stk{0%{opacity:0; transform:translateY(-16px) rotate(-8deg);}35%{opacity:1; transform:translateY(0) rotate(0);}100%{opacity:0; transform:translateY(0);}}
   .gstring .line{flex:1; height:4px; border-radius:4px; background:linear-gradient(90deg,#d9c48a,#f4e6b8);}
   .gstring .lbl{width:34px; color:#f4e6b8; font-weight:800; text-align:center;}
   .gstring.pluck .line{animation:vib .3s;}
@@ -203,6 +215,8 @@ const I18N = {
     song_rain:"Rain Rain Go Away", song_itsy:"Itsy Bitsy Spider", song_happyknow:"If You're Happy",
     song_thisoldman:"This Old Man", song_popweasel:"Pop! Goes the Weasel",
     song_headshoulders:"Head & Shoulders", song_wheels:"Wheels on the Bus",
+    song_beethoven5:"Beethoven's 5th", song_amazing:"Amazing Grace", song_ohsusanna:"Oh Susanna",
+    song_auldlang:"Auld Lang Syne", song_greensleeves:"Greensleeves", song_mountainking:"Mountain King",
     song_watch:"Watch it play", song_yourturn:"Your turn, follow the glowing keys!",
     song_welldone:"You played it! 🌟",
     // chords
@@ -440,6 +454,20 @@ function playDrum(type){
     const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=5000;
     const g=AC.createGain(); g.gain.setValueAtTime(0.5,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.7);
     n.connect(hp); hp.connect(g); g.connect(AC.destination); n.start(t0); n.stop(t0+0.72);
+  } else if(type==="tom"){
+    const o=AC.createOscillator(); const g=AC.createGain();
+    o.type="sine"; o.frequency.setValueAtTime(190,t0); o.frequency.exponentialRampToValueAtTime(95,t0+0.3);
+    g.gain.setValueAtTime(0.85,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.4);
+    o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0+0.42);
+  } else if(type==="ride"){
+    const n=AC.createBufferSource(); n.buffer=noiseBuffer();
+    const hp=AC.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=6000;
+    const g=AC.createGain(); g.gain.setValueAtTime(0.26,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.4);
+    n.connect(hp); hp.connect(g); g.connect(AC.destination);
+    const o=AC.createOscillator(); o.type="square"; o.frequency.value=5200;
+    const g2=AC.createGain(); g2.gain.setValueAtTime(0.06,t0); g2.gain.exponentialRampToValueAtTime(0.0001,t0+0.25);
+    o.connect(g2); g2.connect(AC.destination);
+    n.start(t0); n.stop(t0+0.42); o.start(t0); o.stop(t0+0.26);
   }
 }
 
@@ -744,6 +772,7 @@ const GUITAR_STRINGS=[ // low to high
 ];
 function buildGuitar(withStrum){
   const box=el("div",{class:"guitar"});
+  box.appendChild(el("div",{class:"soundhole"}));   // guitar body look
   const strings=[];
   GUITAR_STRINGS.slice().reverse().forEach(s=>{
     const row=el("div",{class:"gstring"},[
@@ -764,15 +793,68 @@ function buildGuitar(withStrum){
   return box;
 }
 
-/* drums */
+/* drums — realistic tappable kit with a drumstick that strikes */
+const DRUMKIT_SVG=`
+<svg viewBox="0 0 480 340" class="drumkit" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cym" cx="50%" cy="42%" r="62%"><stop offset="0%" stop-color="#ffe9a8"/><stop offset="55%" stop-color="#e8b23a"/><stop offset="100%" stop-color="#a9781c"/></radialGradient>
+    <radialGradient id="dhead" cx="45%" cy="38%" r="66%"><stop offset="0%" stop-color="#ffffff"/><stop offset="70%" stop-color="#f1ecdd"/><stop offset="100%" stop-color="#d6ccb2"/></radialGradient>
+    <radialGradient id="bhead" cx="50%" cy="44%" r="60%"><stop offset="0%" stop-color="#ffffff"/><stop offset="78%" stop-color="#efe7d2"/><stop offset="100%" stop-color="#cfc4a6"/></radialGradient>
+    <linearGradient id="shellR" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6f7d"/><stop offset="100%" stop-color="#c22a3d"/></linearGradient>
+    <linearGradient id="shellB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5c7cff"/><stop offset="100%" stop-color="#2a3ea8"/></linearGradient>
+    <linearGradient id="shellP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b06bff"/><stop offset="100%" stop-color="#6a2ea8"/></linearGradient>
+    <linearGradient id="shellG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3fd6a0"/><stop offset="100%" stop-color="#1e9e72"/></linearGradient>
+  </defs>
+  <g stroke="#9aa0b0" stroke-width="4" stroke-linecap="round">
+    <line x1="95" y1="72" x2="120" y2="250"/><line x1="398" y1="92" x2="360" y2="250"/><line x1="58" y1="150" x2="70" y2="250"/>
+  </g>
+  <g class="dpad drum" data-drum="crash" data-x="95" data-y="70">
+    <ellipse cx="95" cy="72" rx="62" ry="18" fill="url(#cym)" stroke="#8a6416" stroke-width="2"/><ellipse cx="95" cy="68" rx="10" ry="4" fill="#c9962a"/>
+  </g>
+  <g class="dpad drum" data-drum="ride" data-x="398" data-y="92">
+    <ellipse cx="398" cy="92" rx="66" ry="19" fill="url(#cym)" stroke="#8a6416" stroke-width="2"/><ellipse cx="398" cy="88" rx="11" ry="4" fill="#c9962a"/>
+  </g>
+  <g class="dpad drum" data-drum="hihat" data-x="58" data-y="150">
+    <ellipse cx="58" cy="153" rx="46" ry="12" fill="url(#cym)" stroke="#8a6416" stroke-width="2"/><ellipse cx="58" cy="146" rx="46" ry="12" fill="url(#cym)" stroke="#8a6416" stroke-width="2"/>
+  </g>
+  <g class="dpad drum" data-drum="kick" data-x="240" data-y="255">
+    <circle cx="240" cy="255" r="82" fill="url(#shellR)" stroke="#e7ebf4" stroke-width="6"/><circle cx="240" cy="255" r="63" fill="url(#bhead)"/>
+    <text x="240" y="263" text-anchor="middle" font-size="22" font-weight="800" fill="#c53049" font-family="inherit">BOOM</text>
+  </g>
+  <g class="dpad drum" data-drum="tom" data-x="188" data-y="150">
+    <ellipse cx="188" cy="150" rx="42" ry="30" fill="url(#shellB)" stroke="#e7ebf4" stroke-width="4"/><ellipse cx="188" cy="146" rx="33" ry="21" fill="url(#dhead)"/>
+  </g>
+  <g class="dpad drum" data-drum="tom" data-x="278" data-y="144">
+    <ellipse cx="278" cy="144" rx="42" ry="30" fill="url(#shellP)" stroke="#e7ebf4" stroke-width="4"/><ellipse cx="278" cy="140" rx="33" ry="21" fill="url(#dhead)"/>
+  </g>
+  <g class="dpad drum" data-drum="tom" data-x="404" data-y="238">
+    <ellipse cx="404" cy="238" rx="48" ry="34" fill="url(#shellG)" stroke="#e7ebf4" stroke-width="5"/><ellipse cx="404" cy="234" rx="39" ry="26" fill="url(#dhead)"/>
+  </g>
+  <g class="dpad drum" data-drum="snare" data-x="118" data-y="256">
+    <ellipse cx="118" cy="256" rx="54" ry="35" fill="#eef1f8" stroke="#c9cede" stroke-width="5"/><ellipse cx="118" cy="252" rx="44" ry="26" fill="url(#dhead)"/>
+  </g>
+  <g id="stickpos"><g id="stick"><rect x="-4" y="0" width="9" height="74" rx="4" fill="#e0ad55" stroke="#a9781c" stroke-width="1.5"/><circle cx="0" cy="74" r="6" fill="#c98a2a"/></g></g>
+</svg>`;
 function buildDrumKit(){
-  const kit=el("div",{class:"kit"});
-  [["kick",t("bb_kick"),"🦵"],["snare",t("bb_snare"),"🥁"],["hihat",t("bb_hihat"),"🎩"],["crash",t("bb_crash"),"💥"]].forEach(([type,label,em])=>{
-    const pad=el("button",{class:"pad "+type},[el("div",{text:em,style:"font-size:34px"}),el("div",{text:label})]);
-    pad.addEventListener("pointerdown",()=>{ playDrum(type); pad.classList.add("hit"); setTimeout(()=>pad.classList.remove("hit"),110); });
-    kit.appendChild(pad);
+  const wrap=el("div",{class:"drumkit-wrap"});
+  wrap.innerHTML=DRUMKIT_SVG;
+  const svg=wrap.querySelector("svg");
+  if(!svg) return wrap;
+  const stickpos=svg.querySelector("#stickpos"), stick=svg.querySelector("#stick");
+  [].slice.call(svg.querySelectorAll(".drum")).forEach(function(g){
+    const type=g.getAttribute("data-drum");
+    g.addEventListener("pointerdown",function(){
+      playDrum(type);
+      g.classList.remove("dhit"); void g.getBoundingClientRect(); g.classList.add("dhit");
+      setTimeout(function(){ g.classList.remove("dhit"); },170);
+      if(stickpos&&stick){
+        stickpos.setAttribute("transform","translate("+g.getAttribute("data-x")+","+g.getAttribute("data-y")+") rotate(20)");
+        stick.classList.remove("strike"); void stick.getBoundingClientRect(); stick.classList.add("strike");
+        setTimeout(function(){ stick.classList.remove("strike"); },200);
+      }
+    });
   });
-  return kit;
+  return wrap;
 }
 
 /* ---------- SONGS (piano + guitar-friendly melodies) ---------- */
@@ -798,13 +880,27 @@ const SONGS={
   popweasel:{name:()=>t("song_popweasel"), notes:["C4","C4","D4","D4","E4","G4","E4","C4","C4","C4","D4","D4","E4","C4","C4","C4","D4","D4","E4","G4","E4","C4","A4","D4","F4","A4","G4","E4","C4"]},
   itsy:{name:()=>t("song_itsy"), notes:["G4","C5","C5","C5","D5","E5","E5","E5","D5","C5","D5","E5","C5","E5","E5","F5","G5","G5","F5","E5","F5","G5","E5","C5","C5","D5","E5","E5","D5","C5","D5","E5","C5"]},
   furelise:{name:()=>t("song_furelise"), notes:["E5","D#5","E5","D#5","E5","B4","D5","C5","A4","C4","E4","A4","B4","E4","G#4","B4","C5"]},
-  birthday:{name:()=>t("song_birthday"), notes:["C4","C4","D4","C4","F4","E4","C4","C4","D4","C4","G4","F4","C4","C4","C5","A4","F4","E4","D4","A#4","A#4","A4","F4","G4","F4"]}
+  birthday:{name:()=>t("song_birthday"), notes:["C4","C4","D4","C4","F4","E4","C4","C4","D4","C4","G4","F4","C4","C4","C5","A4","F4","E4","D4","A#4","A#4","A4","F4","G4","F4"]},
+  // grown-up / older classical & folk (public domain)
+  beethoven5:{name:()=>t("song_beethoven5"), notes:["G4","G4","G4","D#4","F4","F4","F4","D4","G4","G4","G4","D#4","F4","F4","F4","D4"]},
+  amazing:{name:()=>t("song_amazing"), notes:["G4","C5","E5","C5","E5","D5","C5","A4","G4","G4","A4","C5","C5","A4","G4"]},
+  ohsusanna:{name:()=>t("song_ohsusanna"), notes:["C4","D4","E4","G4","G4","A4","G4","E4","C4","D4","E4","E4","D4","C4","D4","E4","E4","F4","A4","A4","G4","E4","C4","D4","E4","D4","C4"]},
+  auldlang:{name:()=>t("song_auldlang"), notes:["G4","C5","C5","C5","E5","D5","C5","D5","E5","C5","C5","E5","G5","G5","E5","C5","D5","C5","A4","G4","C5"]},
+  greensleeves:{name:()=>t("song_greensleeves"), notes:["A4","C5","D5","E5","F5","E5","D5","B4","G4","A4","B4","C5","A4","G#4","A4","E4","E4","A4","C5","D5","E5","F5","E5","D5","B4","G4"]},
+  mountainking:{name:()=>t("song_mountainking"), notes:["C4","D4","D#4","F4","G4","D#4","G4","F#4","D4","F#4","D4","C4","D4","D#4","F4","G4","G#4","G4","F4","D#4","F4","D4"]}
 };
-// Ordered easiest -> hardest. The whole library is offered to every age band and grown-ups.
-const SONG_ORDER=["hotcross","mary","twinkle","oldmac","babyshark","rain","row","london","frere","jingle","wheels","ode","saints","happyknow","thisoldman","headshoulders","popweasel","itsy","furelise","birthday"];
-function songListForBand(){ return SONG_ORDER.slice(); }
+// Each age section gets its OWN distinct, age-appropriate set. Grown-ups get classical &
+// folk only (no nursery tunes). Lists are disjoint across sections.
+const SONGS_BY_BAND={
+  b1:["hotcross","mary","twinkle","babyshark","rain","row","itsy"],
+  b2:["oldmac","wheels","london","frere","happyknow","headshoulders","popweasel"],
+  b3:["thisoldman","jingle","saints","birthday","ode","mountainking"],
+  ad:["furelise","beethoven5","amazing","ohsusanna","auldlang","greensleeves"]
+};
+function songListForBand(){ return (SONGS_BY_BAND[STATE.band]||SONGS_BY_BAND.b2).slice(); }
 function actSongs(){
   if(STATE.instrument==="uku") return ukeSongScreen();
+  if(STATE.instrument==="guitar") return guitarSongScreen();
   app().appendChild(topbar(true));
   app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
   app().appendChild(el("div",{class:"screen-sub",text:t("song_pick")}));
@@ -1530,6 +1626,34 @@ function ukeSongScreen(){
     }})
   ]));
 }
+function guitarSongScreen(){
+  clear();
+  app().appendChild(topbar(true));
+  app().appendChild(el("div",{class:"screen-title",text:"🎼 "+t("act_songs")}));
+  app().appendChild(el("div",{class:"screen-sub",text:t("uke_song_intro")}));
+  const seq=["em","c","g","c"];
+  let pos=0;
+  const status=el("div",{class:"scorebar"});
+  const diagram=el("div",{class:"center"});
+  const nextLbl=el("div",{class:"screen-sub"});
+  const renderStep=()=>{
+    diagram.innerHTML="";
+    if(pos>=seq.length){ status.textContent=t("uke_song_done"); nextLbl.textContent=""; confetti(); awardStar("guitar_strumsong"); return; }
+    const ch=CHORDS[seq[pos]];
+    diagram.appendChild(buildFretDiagram(ch));
+    diagram.appendChild(el("div",{class:"screen-sub",text:ch.name()}));
+    status.textContent=(pos+1)+" / "+seq.length;
+    nextLbl.textContent=(pos+1<seq.length)?t("uke_next_chord",{c:CHORDS[seq[pos+1]].name()}):"";
+  };
+  renderStep();
+  app().appendChild(status); app().appendChild(diagram); app().appendChild(nextLbl);
+  app().appendChild(el("div",{class:"row",style:"margin-top:14px"},[
+    el("button",{class:"bigbtn warn",text:"🎸 "+t("strum"),onclick:()=>{
+      if(pos>=seq.length){ pos=0; renderStep(); return; }
+      const ch=CHORDS[seq[pos]]; playChord(ch.freqs.filter(f=>f>0)); pos++; renderStep();
+    }})
+  ]));
+}
 function actWarmup(){
   app().appendChild(topbar(true));
   app().appendChild(el("div",{class:"screen-title",text:"🎶 "+t("act_warmup")}));
@@ -1768,7 +1892,7 @@ const VIDEOS_ADULT={
    ============================================================ */
 (function(){
   var down=false, prev=null;
-  var CLS=["wkey","bkey","gstring","pad","ladder-key"];
+  var CLS=["wkey","bkey","gstring","pad","ladder-key","dpad"];
   function surface(node){
     var n=node;
     while(n && n.classList){
